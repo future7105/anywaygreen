@@ -11,3 +11,5 @@
 2. 1~2분 뒤 Vercel이 자동으로 다시 배포합니다.
 
 문구·미션은 `index.html`의 `2. 콘텐츠` 부분, 일정·상한은 운영자 화면 > 설정에서 바꿉니다.
+
+**배포 주소:** https://anywaygreen.vercel.app

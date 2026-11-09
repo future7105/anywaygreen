@@ -6,6 +6,7 @@
 <title>어차피그린 Anyway Green</title>
 <meta name="description" content="어차피 하는 거, 그린하게. 이미 하는 행동에 친환경을 붙이는 대학 간 공동캠페인 — 나의 그린 유형 테스트 (약 6분 · 결과 카드 무료)">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://anywaygreen.vercel.app/">
 <meta property="og:title" content="어차피그린 — 나의 그린 유형 테스트">
 <meta property="og:description" content="어차피 하는 거, 그린하게. 약 6분 · 결과 카드 무료">
 <meta name="theme-color" content="#0B0D0C">
@@ -521,7 +522,7 @@ async function sha256(input) {
   for (const b of buf) { h1 = Math.imul(h1 ^ b, 16777619); h2 = Math.imul(h2 + b, 2246822519); }
   return ("fb" + (h1 >>> 0).toString(16) + (h2 >>> 0).toString(16));
 }
-const shareBase = () => (/^https?:$/.test(location.protocol) ? location.origin + location.pathname : "https://eochapigreen.vercel.app/"); // 배포 주소 확정 시 교체
+const shareBase = () => (/^https?:$/.test(location.protocol) ? location.origin + location.pathname : "https://anywaygreen.vercel.app/"); // 배포 주소
 
 /* 아이콘 (선 아이콘, 장식용은 aria-hidden) */
 const IC = {
