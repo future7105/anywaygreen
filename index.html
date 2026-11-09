@@ -1,0 +1,2034 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>어차피그린 Anyway Green</title>
+<meta name="description" content="어차피 하는 거, 그린하게. 이미 하는 행동에 친환경을 붙이는 대학 간 공동캠페인 — 나의 그린 유형 테스트 (약 6분 · 결과 카드 무료)">
+<meta property="og:type" content="website">
+<meta property="og:title" content="어차피그린 — 나의 그린 유형 테스트">
+<meta property="og:description" content="어차피 하는 거, 그린하게. 약 6분 · 결과 카드 무료">
+<meta name="theme-color" content="#0B0D0C">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<!-- 외부 라이브러리: 데이터베이스(Supabase), 사진 촬영시각 읽기(exifr). 불러오지 못해도 사이트는 동작합니다. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/lite.umd.js"></script>
+<style>
+/* ============ 색상 (기존 사이트 색감 유지) ============ */
+:root{
+  --bg:#0B0D0C; --surface:#141816; --surface2:#1B211E; --line:#27312C;
+  --fg:#EEF3F0; --muted:#97A79E; --accent:#2BD4A4; --accent-ink:#04261C;
+  --accent-soft:rgba(43,212,164,.14); --glow:rgba(18,140,108,.55);
+  --gold:#F2C94C; --warn:#F2A25A; --bad:#F07070; --ok:#2BD4A4;
+  --f-display:"Montserrat","Noto Sans KR",system-ui,sans-serif;
+  --f-body:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --r:16px; --rs:10px; color-scheme:dark;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#F2F6F3; --surface:#FFFFFF; --surface2:#E8EFEA; --line:#D3DDD7;
+  --fg:#0D1712; --muted:#56675E; --accent:#08835F; --accent-ink:#FFFFFF;
+  --accent-soft:rgba(8,131,95,.10); --glow:rgba(43,212,164,.35);
+  --gold:#9A6F00; --warn:#B25A10; --bad:#C0392B; --ok:#08835F; color-scheme:light}}
+:root[data-theme="light"]{
+  --bg:#F2F6F3; --surface:#FFFFFF; --surface2:#E8EFEA; --line:#D3DDD7;
+  --fg:#0D1712; --muted:#56675E; --accent:#08835F; --accent-ink:#FFFFFF;
+  --accent-soft:rgba(8,131,95,.10); --glow:rgba(43,212,164,.35);
+  --gold:#9A6F00; --warn:#B25A10; --bad:#C0392B; --ok:#08835F; color-scheme:light}
+*{box-sizing:border-box}
+html{font-size:15px;-webkit-text-size-adjust:100%}
+html.big{font-size:17.5px}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:44px 44px;opacity:.5;-webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 15%,#000,transparent 75%);mask-image:radial-gradient(ellipse 80% 60% at 50% 15%,#000,transparent 75%)}
+img{max-width:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+h1,h2,h3{margin:0;line-height:1.25;word-break:keep-all;text-wrap:balance}
+p{margin:0}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+.narrow{max-width:680px;margin:0 auto}
+
+/* ============ 상단 바 ============ */
+.top{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top .in{display:flex;align-items:center;gap:10px;height:60px}
+.brand{display:flex;align-items:center;gap:9px;border:0;background:none;cursor:pointer;padding:0;font-family:var(--f-display);font-weight:800;font-size:1.02rem;letter-spacing:.03em;white-space:nowrap}
+.brand i{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+.brand small{font-family:var(--f-body);font-weight:500;font-size:.78rem;color:var(--muted);letter-spacing:0}
+.nav{display:none;gap:2px;margin-left:18px}
+.nav button{border:0;background:none;color:var(--muted);padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:500;min-height:40px}
+.nav button:hover{color:var(--fg)}
+.nav button[aria-current="page"]{color:var(--fg);background:var(--surface2);font-weight:700}
+@media (min-width:860px){.nav{display:flex}}
+.sp{flex:1}
+.chipbtn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 11px;min-height:36px;cursor:pointer;font-size:.84rem;font-weight:700;white-space:nowrap}
+.chipbtn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--surface)}
+.lang button{border:0;background:transparent;padding:6px 10px;min-height:36px;cursor:pointer;font-size:.8rem;font-weight:700;font-family:var(--f-display)}
+.lang button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.iconbtn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface2);display:inline-grid;place-items:center;cursor:pointer;padding:0}
+.iconbtn svg{width:21px;height:21px}
+@media (max-width:420px){.brand small{display:none}.top .in{gap:6px}}
+
+/* 하단 탭 (모바일, 참가자 로그인 시) */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabbar button{border:0;background:none;padding:8px 2px 9px;min-height:58px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.72rem;color:var(--muted)}
+.tabbar button svg{width:22px;height:22px}
+.tabbar button[aria-current="page"]{color:var(--accent);font-weight:700}
+@media (min-width:860px){.tabbar{display:none}}
+
+main{padding:22px 0 120px;min-height:70vh}
+@media (min-width:860px){main{padding:30px 0 80px}}
+
+/* ============ 공통 요소 ============ */
+.display{font-family:var(--f-display);font-weight:800;letter-spacing:-.01em;line-height:1.08}
+.eyebrow{font-size:.76rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.muted{color:var(--muted)} .small{font-size:.86rem} .tiny{font-size:.76rem}
+.num{font-family:var(--f-display);font-variant-numeric:tabular-nums;font-weight:700}
+.stack{display:flex;flex-direction:column;gap:14px}
+.stack-lg{display:flex;flex-direction:column;gap:28px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;min-width:0}
+.card.soft{background:var(--surface2)}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sec-h h2{font-size:1.18rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;border:1px solid var(--line);background:var(--surface2);padding:10px 18px;min-height:46px;font-weight:700;cursor:pointer;text-decoration:none;color:var(--fg);transition:transform .15s ease,box-shadow .2s ease}
+.btn{white-space:nowrap}
+.btn svg,.pill svg,.lvl svg,.hint svg{width:16px;height:16px;flex:none}
+.hint svg{vertical-align:-3px}
+@media (max-width:420px){.top .btn.sm{padding:6px 10px}.chipbtn{padding:6px 8px}.lang button{padding:6px 8px}}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{box-shadow:0 8px 24px var(--glow)}
+.btn.ghost{background:transparent}
+.btn.sm{min-height:36px;padding:6px 13px;font-size:.86rem}
+.btn.lg{min-height:58px;padding:14px 30px;font-size:1.08rem}
+.btn.danger{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:999px;font-size:.76rem;font-weight:700;border:1px solid var(--line);white-space:nowrap}
+.pill.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 50%,transparent)}
+.pill.wait{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,transparent)}
+.pill.bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 50%,transparent)}
+.pill.acc{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.pill.gold{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 50%,transparent)}
+.notice{border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 14px;border-radius:0 var(--rs) var(--rs) 0}
+.notice.warn{border-left-color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,transparent)}
+.hint{font-size:.82rem;color:var(--muted);font-weight:400}
+
+/* 폼 */
+label.f{display:flex;flex-direction:column;gap:6px;font-weight:500;font-size:.93rem}
+input[type=text],input[type=tel],input[type=password],input[type=number],input[type=date],input[type=search],select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:var(--rs);padding:10px 12px;min-height:46px}
+textarea{min-height:90px;resize:vertical}
+@media (max-width:639px){input,select,textarea{font-size:16px}}
+.opt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:var(--rs);padding:12px 14px;cursor:pointer;background:var(--bg)}
+.opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.opt input{margin-top:5px;accent-color:var(--accent)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:7px 14px;min-height:40px;min-width:44px;cursor:pointer;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.chip.sq{border-radius:10px;padding:6px 0;min-width:40px}
+fieldset{border:0;padding:0;margin:0;min-width:0}
+legend{font-weight:500;font-size:.93rem;margin-bottom:8px;padding:0}
+
+/* ============ 랜딩 (KKTI식 롱스크롤) ============ */
+.hero{text-align:center;padding:46px 0 34px;position:relative}
+.hero::before{content:"";position:absolute;left:50%;top:40%;width:min(720px,120vw);height:480px;transform:translate(-50%,-50%);background:radial-gradient(closest-side,var(--glow),transparent);opacity:.55;z-index:-1;pointer-events:none}
+.badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:.82rem;color:var(--muted);background:var(--surface)}
+.badge i{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.h-hero{font-family:var(--f-body);font-weight:900;font-size:clamp(2.2rem,7.6vw,4.4rem);line-height:1.12;letter-spacing:-.03em;margin-top:18px;word-break:keep-all}
+.h-hero em{font-style:normal;color:var(--accent);text-shadow:0 0 30px var(--glow)}
+.lead{color:var(--muted);font-size:1.08rem;margin-top:14px;word-break:keep-all}
+.meta{font-size:.9rem;color:var(--muted);margin-top:22px}
+.meta b{color:var(--fg)}
+.tiles{display:flex;gap:10px;justify-content:center;margin:30px 0 8px}
+.tile{width:clamp(64px,19vw,96px);aspect-ratio:3/4;border:1px solid var(--line);border-radius:18px;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.tile b{font-family:var(--f-display);font-weight:800;font-size:clamp(1.9rem,7vw,2.8rem);line-height:1}
+.tile span{font-family:var(--f-display);font-size:.62rem;letter-spacing:.12em;color:var(--muted)}
+.tagline{font-size:.95rem;color:var(--muted);margin:10px 0 26px}
+.timeline{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.timeline span{font-size:.78rem;border:1px solid var(--line);border-radius:999px;padding:4px 11px;color:var(--muted);background:var(--surface)}
+.timeline span.now{border-color:var(--accent);color:var(--accent)}
+.section{padding:62px 0;border-top:1px solid var(--line)}
+.section .sh{text-align:center;margin-bottom:30px}
+.section .sh h2{font-size:clamp(1.5rem,4.4vw,2.2rem);font-weight:900;letter-spacing:-.02em}
+.section .sh p{color:var(--muted);margin-top:10px;word-break:keep-all}
+.bignum{font-family:var(--f-display);font-weight:800;font-size:clamp(3rem,12vw,5.6rem);line-height:1;color:var(--accent);text-shadow:0 0 34px var(--glow)}
+.statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center}
+.statrow .v{font-family:var(--f-display);font-weight:800;font-size:clamp(1.7rem,6vw,2.6rem);line-height:1.1}
+.statrow .k{color:var(--muted);font-size:.84rem}
+.vs{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:stretch}
+.vs .card{text-align:center}
+.vs .arrow{display:grid;place-items:center;font-family:var(--f-display);font-weight:800;color:var(--accent);font-size:1.4rem}
+@media (max-width:560px){.vs{grid-template-columns:1fr}.vs .arrow{transform:rotate(90deg)}}
+.phase{position:relative;padding:22px}
+.phase .ph{font-family:var(--f-display);font-weight:800;color:var(--accent);font-size:.8rem;letter-spacing:.14em}
+.phase h3{font-size:1.18rem;margin:6px 0}
+.phase .to{margin-top:12px;font-size:.8rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:10px}
+.typecard{position:relative;overflow:hidden}
+.typecard .tl{font-family:var(--f-display);font-weight:800;font-size:2.6rem;line-height:1;color:var(--accent);opacity:.9}
+.typecard h3{margin-top:10px;font-size:1.12rem}
+.typecard .code{font-family:var(--f-display);font-size:.72rem;letter-spacing:.14em;color:var(--muted)}
+.know .ic{width:44px;height:44px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:10px}
+.know .ic svg{width:24px;height:24px}
+.quote{font-size:1.05rem;line-height:1.8;word-break:keep-all}
+.foot{border-top:1px solid var(--line);padding:36px 0 50px;color:var(--muted);font-size:.84rem}
+.foot b{color:var(--fg);font-family:var(--f-display)}
+.foot .links{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+.foot button{border:0;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;padding:0}
+
+/* ============ 결과 카드 ============ */
+.gcard{position:relative;overflow:hidden;border-radius:24px;border:1px solid var(--line);background:var(--surface);padding:30px 22px;text-align:center;isolation:isolate}
+.gcard::before{content:"";position:absolute;inset:auto -30% -60% -30%;height:110%;background:radial-gradient(closest-side,var(--glow),transparent);z-index:-1}
+.gcard .lvl{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--accent);color:var(--accent);border-radius:999px;padding:3px 12px;font-weight:700;font-size:.86rem}
+.gcard .tname{font-weight:900;font-size:clamp(1.9rem,7vw,2.9rem);letter-spacing:-.02em;margin:12px 0 4px}
+.gcard .tcode{font-family:var(--f-display);letter-spacing:.2em;color:var(--muted);font-size:.78rem}
+.gcard .desc{margin-top:12px;word-break:keep-all}
+.gcard .row{justify-content:center}
+.scorebars{display:grid;gap:8px;text-align:left;margin-top:18px}
+.scorebars div{display:grid;grid-template-columns:76px 1fr 30px;gap:8px;align-items:center;font-size:.8rem}
+.scorebars .b{height:8px;border-radius:4px;background:var(--surface2);overflow:hidden}
+.scorebars .b i{display:block;height:100%;background:var(--accent);border-radius:4px}
+
+/* ============ 테스트 ============ */
+.qbar{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.qbar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.answers{display:grid;gap:10px}
+.answers button{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:16px 18px;min-height:60px;cursor:pointer;font-weight:500;font-size:1.02rem;transition:border-color .15s,transform .15s}
+.answers button:hover{border-color:var(--accent);transform:translateX(3px)}
+.answers button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.gridq{display:flex;flex-direction:column;gap:10px}
+.gridq .gq{border:1px solid var(--line);border-radius:var(--rs);padding:12px 14px;background:var(--surface);display:flex;flex-direction:column;gap:8px}
+.gridq .gq.done{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+@media (min-width:760px){.gridq .gq{flex-direction:row;align-items:center;justify-content:space-between}.gridq .gq>span{flex:1}}
+
+/* ============ 미션·피드 ============ */
+.weeks{display:grid;grid-template-columns:repeat(var(--n,3),1fr);gap:6px}
+.weeks div{height:8px;border-radius:4px;background:var(--surface2)}
+.weeks div.done{background:color-mix(in srgb,var(--accent) 45%,var(--surface2))}
+.weeks div.now{background:var(--accent)}
+.stat{display:flex;flex-direction:column;gap:2px}
+.stat .v{font-family:var(--f-display);font-weight:800;font-size:1.8rem;line-height:1.15;font-variant-numeric:tabular-nums}
+.stat .v small{font-size:.85rem;font-weight:600;color:var(--muted);margin-left:3px}
+.stat .k{font-size:.8rem;color:var(--muted)}
+.bar{height:6px;border-radius:3px;background:var(--surface2);overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.missions{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:12px}
+.mission{position:relative;text-align:left;border:1.5px dashed var(--line);background:var(--surface);border-radius:var(--r);padding:16px;cursor:pointer;display:flex;flex-direction:column;gap:6px;min-height:118px;transition:border-color .15s,transform .15s}
+.mission:hover:not(:disabled){border-color:var(--accent);transform:translateY(-2px)}
+.mission[aria-pressed="true"]{border-style:solid;border-color:var(--accent);background:var(--accent-soft)}
+.mission:disabled{opacity:.5;cursor:not-allowed}
+.mission .pts{font-family:var(--f-display);font-weight:800;color:var(--accent);font-size:1.05rem}
+.stamp{position:absolute;top:12px;right:12px;min-width:38px;height:38px;border-radius:50%;border:2px solid var(--accent);color:var(--accent);display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:.68rem;transform:rotate(-12deg);padding:0 4px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.tabs button{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;min-height:40px;cursor:pointer;font-weight:700;font-size:.84rem}
+.tabs button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.feed{display:flex;flex-direction:column;gap:12px}
+.post{display:grid;grid-template-columns:1fr;gap:12px;border:1px solid var(--line);border-radius:var(--r);padding:14px;background:var(--surface)}
+.post .ph{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--rs);background:var(--surface2)}
+@media (min-width:640px){.post.withph{grid-template-columns:170px 1fr}.post .ph{aspect-ratio:1/1}}
+.post .body{min-width:0;display:flex;flex-direction:column;gap:6px}
+.post .meta2{font-size:.8rem;color:var(--muted)}
+.preview{max-width:220px;border-radius:var(--rs);border:1px solid var(--line)}
+
+/* 랭킹 */
+.board{display:flex;flex-direction:column}
+.lb{display:grid;grid-template-columns:54px 1fr auto;gap:12px;align-items:center;padding:12px 6px;border-bottom:1px solid var(--line)}
+.lb:last-child{border-bottom:0}
+.lb .rk{display:flex;flex-direction:column;align-items:center;gap:1px;font-family:var(--f-display);font-weight:800;font-size:1.05rem;color:var(--muted)}
+.lb .rk svg{width:18px;height:18px}
+.lb.r1 .rk{color:var(--gold)}
+.lb.mine{background:var(--accent-soft);border-radius:var(--rs);border-bottom-color:transparent}
+.lb .nm{min-width:0}
+.lb .nm b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb .sc{text-align:right}
+
+/* 표 */
+.tbl{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tbl table{width:100%;border-collapse:collapse;font-size:.86rem}
+.tbl th,.tbl td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+.tbl th{font-size:.74rem;color:var(--muted);font-weight:700}
+.tbl td.r,.tbl th.r{text-align:right;font-variant-numeric:tabular-nums}
+.tbl select{min-height:34px;padding:4px 8px;width:auto}
+.hbars{display:grid;gap:8px}
+.hbars div{display:grid;grid-template-columns:minmax(90px,140px) 1fr 54px;gap:10px;align-items:center;font-size:.86rem}
+.hbars .b{height:10px;border-radius:5px;background:var(--surface2);overflow:hidden}
+.hbars .b i{display:block;height:100%;background:var(--accent)}
+.reportbars{display:grid;grid-template-columns:repeat(var(--n,3),1fr);gap:10px;align-items:end;height:120px}
+.reportbars .col{display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+.reportbars .col .b{width:100%;max-width:56px;background:var(--accent);border-radius:6px 6px 2px 2px;min-height:3px}
+.reportbars .col em{font-style:normal;font-size:.76rem;color:var(--muted)}
+
+.toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:700;z-index:60;max-width:calc(100% - 32px);text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+@media (min-width:860px){.toast{bottom:28px}}
+.codebox{font-family:var(--f-display);font-weight:800;font-size:2rem;letter-spacing:.12em;color:var(--accent);user-select:all}
+
+/* 움직임 (움직임 줄이기 설정 시 끔) */
+@media (prefers-reduced-motion:no-preference){
+  @keyframes agTile{0%,22%{border-color:var(--accent);color:var(--accent);box-shadow:0 0 28px var(--glow);transform:translateY(-8px)}32%,100%{border-color:var(--line);color:var(--fg);box-shadow:none;transform:none}}
+  .tile{animation:agTile 4.8s ease-in-out infinite}
+  .tile:nth-child(2){animation-delay:1.2s}.tile:nth-child(3){animation-delay:2.4s}.tile:nth-child(4){animation-delay:3.6s}
+  @keyframes agUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+  #view.enter>*{animation:agUp .5s cubic-bezier(.2,.7,.2,1) both}
+  @keyframes agPop{0%{transform:scale(.92);opacity:0}100%{transform:none;opacity:1}}
+  .gcard{animation:agPop .5s cubic-bezier(.2,.7,.2,1) both}
+  @keyframes agToast{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
+  .toast{animation:agToast .25s ease both}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header class="top" id="top"></header>
+<main id="view" tabindex="-1"></main>
+<nav class="tabbar" id="tabbar" aria-label="메뉴" hidden></nav>
+
+<script>
+(() => {
+"use strict";
+
+/* =====================================================================
+   1. 설정 — 배포 전에 여기만 채우면 됩니다 (배포가이드.md 참고)
+   ===================================================================== */
+const CONFIG = {
+  SUPABASE_URL: "",       // 예: "https://abcdefgh.supabase.co"  (비워 두면 '로컬 모드'로 이 브라우저에만 저장)
+  SUPABASE_ANON_KEY: "",  // Supabase > Project Settings > API 의 anon public 키
+  TABLE: "ag_docs"
+};
+
+/* 캠페인 기본값 — 운영 중에는 운영자 화면 > 설정에서 바꿀 수 있습니다 */
+const DEFAULT_CFG = {
+  startDate: "2026-11-09",     // 파일럿 시작 (월)
+  weeks: 3,
+  deadline: "2026-11-30",      // 인증 업로드 마감 (이날은 '어제 실천'만 올릴 수 있음)
+  applyDeadline: "2026-11-06", // 모집 마감 → 이후 신청은 예비 명단
+  crewReveal: "2026-11-08",    // 크루 공개
+  dayCap: 30, weekCap: 140,    // 포인트 상한 [가정]
+  completeDays: 12,            // 평일 15일 중 12일 이상 인증 = 완주
+  buddyPerWeek: 2, buddyPerWeekUD: 4, // 버디 인증 주 한도 (촬영 어려움 응답자는 상향)
+  wonPerPoint: 10,
+  schools: ["충남대학교", "고려대학교 세종캠퍼스", "단국대학교 죽전캠퍼스"],
+  annKo: "", annEn: "",
+  tplRemind: "[어차피그린] {nick}님, 오늘 GREEN 하나 붙여볼까요? 인증하기 → {url}",
+  tplNoCert: "[어차피그린] {nick}님, 이번 주 아직 인증이 없어요. 어려운 점이 있으면 답장 주세요! → {url}",
+  tplRank: "[어차피그린] W{w} 랭킹이 공개됐어요. 우리 크루는 몇 위일까요? → {url}#/rank"
+};
+
+/* =====================================================================
+   2. 콘텐츠 — 그린 테스트 설문지 v2 / 파일럿 운영안 기준
+   ===================================================================== */
+const TRACKS = {
+  C: { code: "CAFE",  ko: "텀블러 소믈리에",  en: "Tumbler Sommelier",
+       dko: "어차피 가는 카페, 컵만 바꿔도 그린이에요.", den: "You're going to the café anyway. Switch the cup and you're green." },
+  S: { code: "STUDY", ko: "소등 장학생",      en: "Lights-Off Scholar",
+       dko: "어차피 하는 공부, 끄고 줄이는 습관이 곧 그린이에요.", den: "You're studying anyway. Switching off and printing less is green." },
+  W: { code: "SAVE",  ko: "티끌모아 지구러",  en: "Penny-to-Planet Saver",
+       dko: "어차피 아끼는 돈, 덜 사고 덜 버리면 지구도 아껴요.", den: "You're saving anyway. Buy less, waste less, and the planet saves too." },
+  D: { code: "DIET",  ko: "탄소화물 다이어터", en: "Low-Carb(on) Dieter",
+       dko: "칼로리 말고 탄소. 어차피 먹는 한 끼에서 탄소를 덜어내요.", den: "Carbon, not calories. Cut carbon from meals you eat anyway." }
+};
+const TORDER = ["C", "S", "W", "D"];
+
+/* T1~T12 — 설문지 v2 3장 표와 동일 (선택지 순서 = ANSWER_MAP 순서) */
+const TEST = [
+  { ko: "공강 2시간이 생겼다. 나는?", en: "You suddenly have a 2-hour break. You…", a: [
+    ["도서관에서 밀린 과제 끝내기", "Finish overdue assignments at the library", "S"],
+    ["학교 앞 카페에서 한 잔 하며 쉬기", "Grab a drink at a café near campus", "C"],
+    ["돈 안 드는 휴식, 벤치나 방에서 쉬기", "Rest for free on a bench or in my room", "W"],
+    ["건강한 간식 챙기며 가볍게 쉬기", "Take it easy with a healthy snack", "D"]] },
+  { ko: "아침에 나가기 전 꼭 챙기는 것은?", en: "What do you always take before heading out?", a: [
+    ["노트북·충전기", "Laptop and charger", "S"],
+    ["텀블러나 오늘 마실 음료", "A tumbler or today's drink", "C"],
+    ["도시락이나 간식", "A lunchbox or snacks", "D"],
+    ["이번 주 용돈 잔액 체크", "A check of this week's budget", "W"]] },
+  { ko: "시험기간 나의 모습은?", en: "You during exam season?", a: [
+    ["카공하기 좋은 카페를 이미 알고 있다", "I already know the best cafés to study in", "C"],
+    ["야식 참기가 시험보다 어렵다", "Skipping late-night snacks is harder than the exam", "D"],
+    ["열람실 불 꺼질 때까지 있는다", "I stay until the reading room lights go off", "S"],
+    ["시험기간에도 지출 계획은 지킨다", "I stick to my spending plan even during exams", "W"]] },
+  { ko: "월말, 통장에서 가장 많이 나간 곳은?", en: "End of the month: where did most of your money go?", a: [
+    ["식비·배달", "Food and delivery", "D"],
+    ["생각보다 잘 버텼다, 예산 안", "I stayed within budget, better than expected", "W"],
+    ["커피·음료", "Coffee and drinks", "C"],
+    ["교재·프린트·스터디카페", "Textbooks, printing and study cafés", "S"]] },
+  { ko: "SNS 저장함에 가장 많은 것은?", en: "What fills your saved posts the most?", a: [
+    ["공부법·플래너", "Study tips and planners", "S"],
+    ["할인·짠테크 꿀팁", "Deals and money-saving hacks", "W"],
+    ["레시피·식단", "Recipes and meal plans", "D"],
+    ["카페 투어", "Café tours", "C"]] },
+  { ko: "친구가 \"지금 뭐 해?\" 하고 연락했다. 내 답장은?", en: "A friend texts \"What are you up to?\" You reply…", a: [
+    ["\"카페! 너도 올래?\"", "\"At a café! Wanna come?\"", "C"],
+    ["\"과제 중…\"", "\"Doing assignments…\"", "S"],
+    ["\"방금 밥 먹었어\"", "\"Just had a meal\"", "D"],
+    ["\"이번 달 무지출 도전 중\"", "\"Doing a no-spend challenge this month\"", "W"]] },
+  { ko: "가장 뿌듯한 순간은?", en: "Your proudest moment?", a: [
+    ["이번 달 예산을 안 넘겼을 때", "Staying within this month's budget", "W"],
+    ["목표 공부 시간을 채웠을 때", "Hitting my study-hour goal", "S"],
+    ["새로 간 카페가 맛있을 때", "A new café turning out great", "C"],
+    ["일주일 식단을 지켰을 때", "Sticking to my meal plan all week", "D"]] },
+  { ko: "주말에 가장 하고 싶은 것은?", en: "What do you most want to do on the weekend?", a: [
+    ["직접 밥 해 먹기", "Cook for myself", "D"],
+    ["분위기 좋은 카페 탐방", "Explore a cozy café", "C"],
+    ["밀린 강의·과제 몰아서 하기", "Catch up on lectures and assignments", "S"],
+    ["돈 안 쓰는 '노지출 데이'", "A 'no-spend day'", "W"]] },
+  { ko: "굿즈를 하나 받는다면?", en: "If you could get one piece of merch?", a: [
+    ["텀블러", "A tumbler", "C"],
+    ["가계부 다이어리", "A budget planner", "W"],
+    ["밀폐 도시락통", "An airtight lunchbox", "D"],
+    ["탁상 스탠드·플래너", "A desk lamp and planner", "S"]] },
+  { ko: "친구들이 나를 부르는 별명은?", en: "What do your friends call you?", a: [
+    ["도서관 지박령", "Library ghost", "S"],
+    ["카페인 수혈자", "Caffeine-powered", "C"],
+    ["짠테크 장인", "Frugal master", "W"],
+    ["식단 관리러", "Meal-plan pro", "D"]] },
+  { ko: "하루 중 가장 기다려지는 시간은?", en: "The moment you look forward to most each day?", a: [
+    ["밥 먹는 시간", "Mealtime", "D"],
+    ["커피 타임", "Coffee time", "C"],
+    ["할 일 끝내고 불 끄는 순간", "Turning off the lights after finishing my to-dos", "S"],
+    ["쌓인 포인트·잔액 확인하는 순간", "Checking my points and balance", "W"]] },
+  { ko: "이번 달 딱 하나만 바꿔 본다면?", en: "If you could change just one thing this month?", a: [
+    ["켜두는 전기·불필요한 출력", "Electricity left on and unnecessary printing", "S"],
+    ["일회용 컵", "Disposable cups", "C"],
+    ["배달·남기는 음식", "Delivery and leftover food", "D"],
+    ["충동 소비", "Impulse buys", "W"]] }
+];
+
+/* A6 12행 → 트랙 (null = 레벨 계산에만 포함) — 설문지 v2 4장 */
+const A6_ROWS = [
+  { id: "tumbler", tr: "C", ko: "텀블러 사용", en: "Using a tumbler" },
+  { id: "straw", tr: "C", ko: "빨대·컵홀더 거절", en: "Refusing straws and sleeves" },
+  { id: "mug", tr: "C", ko: "매장 다회용컵 사용", en: "Using reusable cups in-store" },
+  { id: "plug", tr: "S", ko: "안 쓰는 전기·멀티탭 끄기", en: "Switching off unused power and power strips" },
+  { id: "print", tr: "S", ko: "불필요한 출력 줄이기", en: "Printing less" },
+  { id: "stream", tr: "S", ko: "스트리밍 화질 낮추기", en: "Lowering streaming quality" },
+  { id: "used", tr: "W", ko: "중고 사기·안 사기", en: "Buying second-hand, or not buying" },
+  { id: "batch", tr: "W", ko: "세탁·설거지 모아서 하기", en: "Running full loads of laundry and dishes" },
+  { id: "container", tr: "D", ko: "배달 대신 직접 포장 (용기 내)", en: "Picking up food in my own container instead of delivery" },
+  { id: "veg", tr: "D", ko: "하루 1끼 채식·잔반 없이", en: "One plant-based meal a day, no leftovers" },
+  { id: "walk", tr: null, ko: "가까운 거리 걷기", en: "Walking short distances" },
+  { id: "transit", tr: null, ko: "대중교통 이용", en: "Taking public transport" }
+];
+/* [가정] A6 선택지 — 원본 설문 문구로 교체 필요. 0번이 '이미 하고 있다'(레벨 계산 기준) */
+const A6_OPTS = [["이미 하고 있다", "Already doing it"], ["가끔 한다", "Sometimes"], ["안 한다", "Not yet"]];
+
+/* [가정] A1~A3 선택지 */
+const GRADES = [["1학년", "Year 1"], ["2학년", "Year 2"], ["3학년", "Year 3"], ["4학년 이상", "Year 4+"]];
+const HOMES = [["자취", "On my own"], ["기숙사", "Dorm"], ["본가(통학)", "With family (commute)"], ["기타", "Other"]];
+
+/* [가정] M1~M12 — 원본 설문지 문구로 교체 필요 (사전 T0 / 사후 T1에 같은 문항 사용) */
+const MQ = [
+  { id: "M1", type: "days", ko: "텀블러·다회용컵을 쓴 날", en: "Days you used a tumbler or reusable cup" },
+  { id: "M2", type: "days", ko: "외출 전 멀티탭·대기전력을 끈 날", en: "Days you switched off power strips before going out" },
+  { id: "M3", type: "days", ko: "출력 대신 PDF·디지털로 처리한 날", en: "Days you went digital instead of printing" },
+  { id: "M4", type: "days", ko: "계획에 없던 소비를 참은 날", en: "Days you skipped an unplanned purchase" },
+  { id: "M5", type: "days", ko: "배달 음식을 시킨 날", en: "Days you ordered delivery" },
+  { id: "M6", type: "days", ko: "음식을 남기지 않은 날", en: "Days you finished all your food" },
+  { id: "M7", type: "days", ko: "가까운 거리를 걷거나 대중교통을 탄 날", en: "Days you walked or took public transport" },
+  { id: "M8", type: "days", ko: "친환경 행동을 하나 이상 한 날", en: "Days you did at least one green action" },
+  { id: "M9", type: "likert", ko: "나는 일상에서 친환경 실천을 꾸준히 할 수 있다", en: "I can keep up green habits in daily life" },
+  { id: "M10", type: "likert", ko: "친환경 실천은 번거롭다", en: "Green habits are a hassle" },
+  { id: "M11", type: "likert", ko: "내 주변 친구들도 친환경 실천을 한다", en: "My friends practice green habits too" },
+  { id: "M12", type: "likert", ko: "다른 학교 학생과 함께라면 더 꾸준히 할 것 같다", en: "I'd keep it up better with students from other schools" }
+];
+/* [가정] A7~A10 */
+const A7_OPTS = [["번거로워서", "It's a hassle"], ["자꾸 잊어버려서", "I keep forgetting"], ["효과가 있는지 몰라서", "Not sure it makes a difference"], ["돈이 더 들어서", "It costs more"], ["같이 할 사람이 없어서", "No one to do it with"]];
+const A8_OPTS = [["사진", "Photo"], ["화면 캡처", "Screenshot"], ["크루원 확인", "Crewmate check"], ["짧은 글", "Short text"]];
+const A9_OPTS = [["기프티콘", "Gift voucher"], ["교내 마일리지·이수증", "Campus mileage or certificate"], ["친환경 굿즈", "Eco goods"], ["순위·배지", "Rankings and badges"]];
+const A10_OPTS = [["꼭 해보고 싶다", "Definitely"], ["관심 있다", "Interested"], ["잘 모르겠다", "Not sure"], ["생각 없다", "Not for me"]];
+
+const LEVELS = {
+  sprout: { ko: "새싹", en: "Sprout", mko: "시작이 반, 이미 한 걸음 내디뎠어요", men: "Half the battle is starting, and you've already begun" },
+  stem:   { ko: "줄기", en: "Stem",   mko: "생각보다 많이 하고 있었네요", men: "You're doing more than you thought" },
+  tree:   { ko: "나무", en: "Tree",   mko: "알고 보니 이미 그린 고수", men: "Turns out you're already a green pro" }
+};
+
+/* [가정] 미션 — Track별 3단계 × 2개, 공통(걷기·대중교통), 대체(이동 어려움). 팀에서 문구 확정 필요 */
+const MISSIONS = [
+  { id: "C1a", tr: "C", lv: 1, ko: "빨대·컵홀더·캐리어 거절하기", en: "Say no to straws, sleeves and carriers" },
+  { id: "C1b", tr: "C", lv: 1, ko: "물병 챙겨서 생수 안 사기", en: "Carry a bottle instead of buying water" },
+  { id: "C2a", tr: "C", lv: 2, ko: "매장에서 다회용컵으로 마시기", en: "Drink from a reusable cup in-store" },
+  { id: "C2b", tr: "C", lv: 2, ko: "외출할 때 텀블러 챙기기", en: "Pack a tumbler when you head out" },
+  { id: "C3a", tr: "C", lv: 3, ko: "텀블러에 음료 주문하기", en: "Order your drink in a tumbler" },
+  { id: "C3b", tr: "C", lv: 3, ko: "하루 동안 일회용 컵 0개", en: "Zero disposable cups for a whole day" },
+  { id: "S1a", tr: "S", lv: 1, ko: "외출 전 멀티탭·대기전력 끄기", en: "Switch off power strips before going out" },
+  { id: "S1b", tr: "S", lv: 1, ko: "안 쓰는 조명·모니터 끄기", en: "Turn off unused lights and monitors" },
+  { id: "S2a", tr: "S", lv: 2, ko: "출력 대신 PDF로 필기하기", en: "Annotate a PDF instead of printing" },
+  { id: "S2b", tr: "S", lv: 2, ko: "배경 영상 끄거나 스트리밍 화질 낮추기", en: "Turn off background videos or lower streaming quality" },
+  { id: "S3a", tr: "S", lv: 3, ko: "클라우드·메일함 불필요한 파일 정리", en: "Clean up unused cloud files and emails" },
+  { id: "S3b", tr: "S", lv: 3, ko: "스크린타임 전날보다 30분 줄이기 (캡처)", en: "Cut screen time by 30 min vs. yesterday (screenshot)" },
+  { id: "W1a", tr: "W", lv: 1, ko: "장보기 목록 만들고 목록대로 사기", en: "Shop from a list and stick to it" },
+  { id: "W1b", tr: "W", lv: 1, ko: "냉장고 속 음식 먼저 먹기", en: "Eat what's already in the fridge first" },
+  { id: "W2a", tr: "W", lv: 2, ko: "세탁·설거지 모아서 한 번에 하기", en: "Run full loads of laundry or dishes" },
+  { id: "W2b", tr: "W", lv: 2, ko: "사고 싶은 물건 하루 미루기", en: "Wait a day before an impulse buy" },
+  { id: "W3a", tr: "W", lv: 3, ko: "무지출 데이 도전", en: "Do a no-spend day" },
+  { id: "W3b", tr: "W", lv: 3, ko: "안 쓰는 물건 중고 판매·나눔하기", en: "Sell or give away something you don't use" },
+  { id: "D1a", tr: "D", lv: 1, ko: "음식 남기지 않기", en: "Finish your plate" },
+  { id: "D1b", tr: "D", lv: 1, ko: "배달 시 일회용 수저 안 받기", en: "Skip disposable cutlery on delivery orders" },
+  { id: "D2a", tr: "D", lv: 2, ko: "배달 대신 직접 포장하기 (용기 내)", en: "Pick up food in your own container" },
+  { id: "D2b", tr: "D", lv: 2, ko: "하루 1끼 채식하기", en: "Have one plant-based meal" },
+  { id: "D3a", tr: "D", lv: 3, ko: "도시락 싸거나 직접 요리하기", en: "Pack lunch or cook for yourself" },
+  { id: "D3b", tr: "D", lv: 3, ko: "하루 2끼 채식하기", en: "Have two plant-based meals" },
+  { id: "X1", tr: "X", lv: 0, ko: "가까운 거리 걸어서 이동하기", en: "Walk a short trip" },
+  { id: "X2", tr: "X", lv: 0, ko: "대중교통으로 이동하기 (교통카드 내역 캡처)", en: "Take public transport (screenshot your card history)" },
+  { id: "Z1", tr: "Z", lv: 0, ko: "대체: 외출 한 번에 용무 몰아서 처리하기", en: "Alternative: bundle errands into one outing" },
+  { id: "Z2", tr: "Z", lv: 0, ko: "대체: 택배·배송을 한 번에 모아 받기", en: "Alternative: combine deliveries into one" }
+];
+const MISSION = Object.fromEntries(MISSIONS.map(m => [m.id, m]));
+const PHASES = [
+  { w: 1, ko: "하나 붙이기", en: "Attach one", dko: "가장 쉬운 1단계 미션으로 시작해요.", den: "Start with the easiest level-1 missions." },
+  { w: 2, ko: "넓히기", en: "Expand", dko: "한 단계 위 미션이 열리고, 크루 팁 카드를 다른 크루와 바꿔요.", den: "Level-2 missions open and crews swap tip cards." },
+  { w: 3, ko: "나누기", en: "Share", dko: "3단계와 STUDY 보너스 미션이 열리고, 결과를 스토리로 나눠요.", den: "Level-3 and STUDY bonus missions open. Share your result." }
+];
+
+/* =====================================================================
+   3. 유틸
+   ===================================================================== */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+let lang = store.get("ag.lang", (navigator.language || "ko").toLowerCase().startsWith("ko") ? "ko" : "en");
+const K = (ko, en) => (lang === "en" ? (en ?? ko) : ko);
+const L = o => (o ? (lang === "en" ? (o.en ?? o.ko) : o.ko) : "");
+const P2 = a => (lang === "en" ? a[1] : a[0]);
+const fmt = n => Math.round(n || 0).toLocaleString("ko-KR");
+const DAY = 864e5;
+const kstDay = (ts = Date.now()) => new Date(ts + 9 * 3600e3).toISOString().slice(0, 10);
+const dayMs = d => Date.parse(d + "T00:00:00+09:00");
+const addDays = (d, n) => kstDay(dayMs(d) + n * DAY);
+const dow = d => new Date(d + "T00:00:00Z").getUTCDay();
+const isWeekday = d => { const x = dow(d); return x >= 1 && x <= 5; };
+const mmdd = d => { const [, m, dd] = d.split("-"); return `${+m}/${+dd}`; };
+const today = () => (window.__AG_TODAY || kstDay());
+const rid = (n = 12) => { const a = "abcdefghijkmnopqrstuvwxyz23456789", r = crypto.getRandomValues(new Uint8Array(n)); return [...r].map(v => a[v % a.length]).join(""); };
+const codeGen = () => { const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(4)); return "AG-" + [...r].map(v => a[v % a.length]).join(""); };
+async function sha256(input) {
+  const buf = typeof input === "string" ? new TextEncoder().encode(input) : new Uint8Array(input);
+  if (window.crypto && crypto.subtle) {
+    const h = await crypto.subtle.digest("SHA-256", buf);
+    return [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+  let h1 = 0x811c9dc5, h2 = 0x01000193; // 보안 연결(https)이 아닐 때의 대체 해시
+  for (const b of buf) { h1 = Math.imul(h1 ^ b, 16777619); h2 = Math.imul(h2 + b, 2246822519); }
+  return ("fb" + (h1 >>> 0).toString(16) + (h2 >>> 0).toString(16));
+}
+const shareBase = () => (/^https?:$/.test(location.protocol) ? location.origin + location.pathname : "https://eochapigreen.vercel.app/"); // 배포 주소 확정 시 교체
+
+/* 아이콘 (선 아이콘, 장식용은 aria-hidden) */
+const IC = {
+  home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
+  camera: '<rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/>',
+  crew: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14a5 5 0 0 1 5.5 5"/>',
+  rank: '<path d="M8 21V11H3v10zM15 21V4h-5v17zM21 21v-7h-5v7z"/>',
+  ex: '<path d="M4 7h13l-3-3M20 17H7l3 3"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+  leaf: '<path d="M5 19c0-9 6-14 15-14 0 9-5 15-14 15"/><path d="M5 19l7-7"/>',
+  link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+  check: '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
+  layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
+  medal: '<circle cx="12" cy="15" r="5"/><path d="M8.5 11L6 3h4l2 5 2-5h4l-2.5 8"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  spark: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/>'
+};
+const icon = (k, label) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ${label ? `role="img" aria-label="${esc(label)}"` : 'aria-hidden="true"'}>${IC[k]}</svg>`;
+
+let toastTimer;
+function toast(msg) {
+  let el = $(".toast");
+  if (!el) { el = document.createElement("div"); el.className = "toast"; el.setAttribute("role", "status"); document.body.appendChild(el); }
+  el.textContent = msg; clearTimeout(toastTimer); toastTimer = setTimeout(() => el.remove(), 2800);
+}
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); toast(K("복사했어요", "Copied")); return true; }
+  catch (e) {
+    const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); toast(K("복사했어요", "Copied")); } catch (x) { toast(K("복사하지 못했어요", "Couldn't copy")); }
+    ta.remove(); return false;
+  }
+}
+function download(filename, data, type) {
+  const url = typeof data === "string" && data.startsWith("data:") ? data : URL.createObjectURL(new Blob([data], { type }));
+  const a = document.createElement("a"); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  if (!url.startsWith("data:")) setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+const csvCell = s => '"' + String(s ?? "").replace(/"/g, '""') + '"';
+const toCSV = rows => "﻿" + rows.map(r => r.map(csvCell).join(",")).join("\n");
+function parseCSV(text) {
+  text = String(text || "").replace(/^﻿/, "");
+  const rows = []; let row = [], cur = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true;
+    else if (c === ",") { row.push(cur); cur = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(cur); rows.push(row); row = []; cur = ""; }
+    else cur += c;
+  }
+  if (cur !== "" || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter(r => r.some(x => String(x).trim() !== ""));
+}
+
+/* =====================================================================
+   4. 데이터 저장소 — Supabase(공유) 또는 로컬(이 브라우저만)
+   같은 모양의 함수(doc/collection)로 감싸서 화면 코드는 저장소 종류를 몰라도 됨
+   ===================================================================== */
+function makeLocalDB() {
+  const KEY = "ag.localdb.v2";
+  let data = {};
+  try { data = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { data = {}; }
+  const docL = new Map(), colL = new Map();
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { throw { code: "quota", message: "storage full" }; } };
+  const parent = p => p.split("/").slice(0, -1).join("/");
+  const snapDoc = p => ({ id: p.split("/").pop(), exists: data[p] !== undefined, data: () => data[p] });
+  const snapCol = c => { const docs = Object.keys(data).filter(p => parent(p) === c).map(snapDoc); return { docs, size: docs.length }; };
+  const notify = p => { (docL.get(p) || []).forEach(f => f(snapDoc(p))); (colL.get(parent(p)) || []).forEach(f => f(snapCol(parent(p)))); };
+  const notifyAll = () => { docL.forEach((fs, p) => fs.forEach(f => f(snapDoc(p)))); colL.forEach((fs, c) => fs.forEach(f => f(snapCol(c)))); };
+  window.addEventListener("storage", e => { if (e.key === KEY) { try { data = JSON.parse(e.newValue || "{}"); } catch (x) {} notifyAll(); } });
+  const sub = (map, k, fn, first) => { if (!map.has(k)) map.set(k, []); map.get(k).push(fn); setTimeout(() => fn(first()), 0); };
+  const doc = p => ({
+    async get() { return snapDoc(p); },
+    async set(v) { const prev = data[p]; data[p] = JSON.parse(JSON.stringify(v)); try { save(); } catch (e) { if (prev === undefined) delete data[p]; else data[p] = prev; throw e; } notify(p); },
+    async update(v) { if (data[p] === undefined) throw { code: "missing" }; await doc(p).set({ ...data[p], ...v }); },
+    async delete() { delete data[p]; save(); notify(p); },
+    onSnapshot(fn) { sub(docL, p, fn, () => snapDoc(p)); }
+  });
+  const col = c => ({
+    doc(id) { return doc(c + "/" + (id || rid())); },
+    async get() { return snapCol(c); },
+    onSnapshot(fn) { sub(colL, c, fn, () => snapCol(c)); }
+  });
+  return { doc, collection: col };
+}
+
+function makeSupabaseDB() {
+  const sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+  S.sb = sb;
+  const T = CONFIG.TABLE, cache = {}, docL = new Map(), colL = new Map();
+  const parent = p => p.split("/").slice(0, -1).join("/");
+  const snapDoc = p => ({ id: p.split("/").pop(), exists: cache[p] !== undefined, data: () => cache[p] });
+  const snapCol = c => { const docs = Object.keys(cache).filter(p => parent(p) === c).map(snapDoc); return { docs, size: docs.length }; };
+  const notify = p => { (docL.get(p) || []).forEach(f => f(snapDoc(p))); (colL.get(parent(p)) || []).forEach(f => f(snapCol(parent(p)))); };
+  const notifyAll = () => { docL.forEach((fs, p) => fs.forEach(f => f(snapDoc(p)))); colL.forEach((fs, c) => fs.forEach(f => f(snapCol(c)))); };
+  let ready = false;
+  async function loadAll() {
+    const rows = []; const step = 1000;
+    for (let from = 0; ; from += step) {
+      const { data, error } = await sb.from(T).select("path,data").neq("col", "photos").range(from, from + step - 1);
+      if (error) throw error;
+      rows.push(...data); if (data.length < step) break;
+    }
+    Object.keys(cache).forEach(k => delete cache[k]);
+    rows.forEach(r => { cache[r.path] = r.data; });
+    ready = true; S.dbError = null; notifyAll();
+  }
+  loadAll().catch(e => { console.error(e); S.dbError = e.message || String(e); render(); });
+  sb.channel("ag-docs").on("postgres_changes", { event: "*", schema: "public", table: T }, pl => {
+    const path = (pl.new && pl.new.path) || (pl.old && pl.old.path);
+    if (!path || path.startsWith("photos/") || path.startsWith("private/")) return;
+    if (pl.eventType === "DELETE") delete cache[path]; else cache[path] = pl.new.data;
+    notify(path);
+  }).subscribe();
+  setInterval(() => { if (document.visibilityState === "visible") loadAll().catch(() => {}); }, 45000);
+  const sub = (map, k, fn, first) => { if (!map.has(k)) map.set(k, []); map.get(k).push(fn); if (ready) setTimeout(() => fn(first()), 0); };
+  const fail = error => { throw { code: "unavailable", message: error.message }; };
+  const doc = p => ({
+    async get() {
+      if (p.startsWith("photos/")) {
+        const { data, error } = await sb.from(T).select("data").eq("path", p).maybeSingle();
+        if (error) fail(error);
+        return { exists: !!data, data: () => data && data.data };
+      }
+      return snapDoc(p);
+    },
+    async set(v) {
+      const val = JSON.parse(JSON.stringify(v));
+      const { error } = await sb.from(T).upsert({ path: p, col: parent(p), data: val, updated_at: new Date().toISOString() });
+      if (error) fail(error);
+      if (!p.startsWith("photos/")) { cache[p] = val; notify(p); }
+    },
+    async update(v) { if (cache[p] === undefined) throw { code: "missing" }; await doc(p).set({ ...cache[p], ...v }); },
+    async delete() { const { error } = await sb.from(T).delete().eq("path", p); if (error) fail(error); delete cache[p]; notify(p); },
+    onSnapshot(fn) { sub(docL, p, fn, () => snapDoc(p)); }
+  });
+  const col = c => ({
+    doc(id) { return doc(c + "/" + (id || rid())); },
+    async get() { return snapCol(c); },
+    onSnapshot(fn) { sub(colL, c, fn, () => snapCol(c)); }
+  });
+  return { doc, collection: col };
+}
+
+/* 개인정보(실명·연락처·PIN)는 'private' 칸에 따로 저장 — Supabase에서는 일반 화면에서 읽을 수 없고, 운영자 비밀번호로만 열람 */
+const API = {
+  async insertPrivate(code, data) {
+    if (S.mode === "supabase") {
+      const { error } = await S.sb.from(CONFIG.TABLE).insert({ path: "private/" + code, col: "private", data });
+      if (error) throw { code: "unavailable", message: error.message };
+    } else await S.db.doc("private/" + code).set(data);
+  },
+  async login(code, hash) {
+    if (S.mode === "supabase") {
+      const { data, error } = await S.sb.rpc("ag_login", { p_code: code, p_hash: hash });
+      if (error) throw { code: "unavailable", message: error.message };
+      return !!data;
+    }
+    const s = await S.db.doc("private/" + code).get();
+    return s.exists && s.data().pinHash === hash;
+  },
+  async adminCheck(pw) {
+    if (S.mode === "supabase") {
+      const { data, error } = await S.sb.rpc("ag_admin_check", { pw });
+      if (error) throw { code: "unavailable", message: error.message };
+      return !!data;
+    }
+    const s = await S.db.doc("config/admin").get();
+    if (!s.exists) return "setup";
+    return s.data().hash === await sha256("admin:" + pw);
+  },
+  async privateAll(pw) {
+    const o = {};
+    if (S.mode === "supabase") {
+      const { data, error } = await S.sb.rpc("ag_private", { pw });
+      if (error) throw { code: "unavailable", message: error.message };
+      (data || []).forEach(r => { o[r.path.split("/")[1]] = r.data; });
+    } else (await S.db.collection("private").get()).docs.forEach(d => { o[d.id] = d.data(); });
+    return o;
+  }
+};
+
+/* =====================================================================
+   5. 상태
+   ===================================================================== */
+const STEPS = ["intro", "base", ...TEST.map((_, i) => "t" + i), "a6", "m", "p4", "result"];
+const newTest = () => ({ i: 0, consent: false, base: {}, t: [], a6: {}, m: {}, p: { A7: [] }, result: null, testId: null, r1: null });
+const COLS = ["members", "crews", "proofs", "tests", "tips", "reflections", "checkins", "t1", "notify", "payouts"];
+const S = {
+  db: null, sb: null, mode: "local", dbError: null,
+  cfg: { ...DEFAULT_CFG },
+  members: {}, crews: {}, proofs: {}, tests: {}, tips: {}, reflections: {}, checkins: {}, t1: {}, notify: {}, payouts: {},
+  me: store.get("ag.session", null), admin: false, adminPw: null, priv: {},
+  route: "home", test: store.get("ag.test", null) || newTest(), draft: {}, busy: false,
+  rankW: null, rankTab: "school", adminTab: "stats", notifyFilter: "today0", sample: [], adminSetup: false
+};
+const cfg = () => S.cfg;
+const me = () => (S.me && S.members[S.me]) || null;
+const ACTIVE = ["active", "contact"];
+const isActive = m => m && ACTIVE.includes(m.status) && m.crewId;
+const saveTest = () => store.set("ag.test", S.test);
+const refCode = () => store.get("ag.ref", "");
+
+/* 날짜·주차 */
+const pilotStart = () => cfg().startDate;
+const pilotEnd = () => addDays(pilotStart(), cfg().weeks * 7 - 1);
+const weekOfDay = d => (d < pilotStart() ? 0 : Math.floor((dayMs(d) - dayMs(pilotStart())) / (7 * DAY)) + 1);
+const curWeek = () => weekOfDay(today());
+const inPilot = d => d >= pilotStart() && d <= pilotEnd();
+const totalWeekdays = () => { let n = 0; for (let d = pilotStart(); d <= pilotEnd(); d = addDays(d, 1)) if (isWeekday(d)) n++; return n; };
+function phaseLabel() {
+  const w = curWeek(), n = cfg().weeks;
+  if (w === 0) { const dd = Math.round((dayMs(pilotStart()) - dayMs(today())) / DAY); return K(`파일럿 시작 D-${dd}`, `Pilot starts in ${dd} day${dd === 1 ? "" : "s"}`); }
+  if (w > n) return K("파일럿 종료 · 결과 정리 중", "Pilot finished · results coming");
+  const ph = PHASES[w - 1];
+  return K(`W${w} · ${ph ? ph.ko : ""}`, `Week ${w} · ${ph ? ph.en : ""}`);
+}
+const canUploadFor = d => inPilot(d) && d <= today() && today() <= cfg().deadline;
+
+/* =====================================================================
+   6. 그린 테스트 계산 — 설문지 v2 getGreenResult와 같은 규칙
+   ===================================================================== */
+function greenResult(tIdx, a6) {
+  const picks = tIdx.map((ai, qi) => TEST[qi].a[ai][2]);
+  const score = { C: 0, S: 0, W: 0, D: 0 };
+  picks.forEach((tr, i) => { score[tr] += i === 11 ? 2 : 1; }); // T12만 2점
+  const pickTop = cands => {
+    const max = Math.max(...cands.map(t => score[t]));
+    const tied = cands.filter(t => score[t] === max);
+    if (tied.length === 1) return tied[0];
+    for (let i = picks.length - 1; i >= 0; i--) if (tied.includes(picks[i])) return picks[i]; // T12 → T1 순
+    return tied[0];
+  };
+  const main = pickTop(TORDER), sub = pickTop(TORDER.filter(t => t !== main));
+  const done = A6_ROWS.filter(r => a6[r.id] === 0);
+  const n = done.length;
+  const level = n >= 8 ? "tree" : n >= 4 ? "stem" : "sprout";
+  const already = done.filter(r => r.tr === main).map(r => r.id);
+  return { main, sub, level, n, already, score };
+}
+
+/* =====================================================================
+   7. 포인트 계산 — 하루 30·주 140 상한, 주말도 포인트 지급, 완주는 평일만
+   ===================================================================== */
+let LEDGER = null;
+function ledger() {
+  if (LEDGER) return LEDGER;
+  const by = {};
+  Object.entries(S.proofs).filter(([, p]) => p.status === "approved").sort((a, b) => a[1].createdAt - b[1].createdAt).forEach(([id, p]) => {
+    const w = weekOfDay(p.day); if (w < 1 || w > cfg().weeks) return;
+    const u = by[p.code] || (by[p.code] = { total: 0, day: {}, week: {}, wd: new Set(), gain: {}, count: 0 });
+    const g = Math.max(0, Math.min(p.points || 0, cfg().dayCap - (u.day[p.day] || 0), cfg().weekCap - (u.week[w] || 0)));
+    u.day[p.day] = (u.day[p.day] || 0) + g; u.week[w] = (u.week[w] || 0) + g; u.total += g; u.gain[id] = g; u.count++;
+    if (isWeekday(p.day)) u.wd.add(p.day);
+  });
+  return (LEDGER = by);
+}
+const EMPTY_U = { total: 0, day: {}, week: {}, wd: new Set(), gain: {}, count: 0 };
+const U = code => ledger()[code] || EMPTY_U;
+const pts = (code, w) => (w ? (U(code).week[w] || 0) : U(code).total);
+const completed = code => U(code).wd.size >= cfg().completeDays;
+const reward = code => (completed(code) ? pts(code) * cfg().wonPerPoint : 0);
+const activeMembers = () => Object.values(S.members).filter(isActive);
+const crewMembers = id => activeMembers().filter(m => m.crewId === id);
+function crewRanking(w) {
+  return Object.entries(S.crews).map(([id, c]) => {
+    const ms = crewMembers(id);
+    return { id, ...c, n: ms.length, score: ms.length ? ms.reduce((a, m) => a + pts(m.code, w), 0) / ms.length : 0 };
+  }).filter(c => c.n > 0).sort((a, b) => b.score - a.score || String(a.name).localeCompare(String(b.name)));
+}
+function schoolRanking(w) {
+  return cfg().schools.map(s => {
+    const ms = activeMembers().filter(m => m.school === s);
+    return { s, n: ms.length, score: ms.length ? ms.reduce((a, m) => a + pts(m.code, w), 0) / ms.length : 0 };
+  }).sort((a, b) => b.score - a.score);
+}
+const indivRanking = w => activeMembers().map(m => ({ m, score: pts(m.code, w) })).sort((a, b) => b.score - a.score || String(a.m.nickname).localeCompare(String(b.m.nickname)));
+const missionPoints = (m, bonus) => (m.lv === 0 || bonus ? 5 : m.lv === 1 ? 10 : 15);
+
+/* =====================================================================
+   8. 쓰기
+   ===================================================================== */
+async function write(fn) {
+  if (!S.db) { toast(K("저장소에 연결되지 않았어요", "Not connected to storage")); return false; }
+  try { await fn(S.db); return true; }
+  catch (e) {
+    console.error(e);
+    toast(e && e.code === "quota" ? K("이 브라우저 저장 공간이 가득 찼어요 (로컬 모드)", "Browser storage is full (local mode)") : K("저장하지 못했어요. 잠시 후 다시 시도해 주세요.", "Couldn't save. Please try again."));
+    return false;
+  }
+}
+function compressImage(file, max = 900) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onerror = reject;
+    fr.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        let mx = max, q = .72, out = "";
+        for (let i = 0; i < 8; i++) {
+          const sc = Math.min(1, mx / Math.max(img.width, img.height));
+          const c = document.createElement("canvas"); c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+          c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+          out = c.toDataURL("image/jpeg", q);
+          if (out.length < 170000) break;
+          if (q > .45) q -= .1; else mx = Math.round(mx * .8);
+        }
+        resolve(out);
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+async function readShotTime(file) {
+  try {
+    if (!window.exifr) return null;
+    const x = await window.exifr.parse(file, ["DateTimeOriginal", "CreateDate"]);
+    const d = x && (x.DateTimeOriginal || x.CreateDate);
+    return d instanceof Date && !isNaN(d) ? d.getTime() : null;
+  } catch (e) { return null; }
+}
+
+/* 9:16 스토리 이미지 (인스타 공유용) */
+async function storyImage(lines, alt) {
+  try { await document.fonts.ready; } catch (e) {}
+  const c = document.createElement("canvas"); c.width = 1080; c.height = 1920;
+  const g = c.getContext("2d");
+  g.fillStyle = "#0B0D0C"; g.fillRect(0, 0, 1080, 1920);
+  g.strokeStyle = "rgba(39,49,44,.7)"; g.lineWidth = 2;
+  for (let x = 0; x <= 1080; x += 72) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, 1920); g.stroke(); }
+  for (let y = 0; y <= 1920; y += 72) { g.beginPath(); g.moveTo(0, y); g.lineTo(1080, y); g.stroke(); }
+  const grd = g.createRadialGradient(540, 1150, 40, 540, 1150, 860);
+  grd.addColorStop(0, "rgba(18,140,108,.65)"); grd.addColorStop(1, "rgba(11,13,12,0)");
+  g.fillStyle = grd; g.fillRect(0, 0, 1080, 1920);
+  g.textAlign = "center";
+  g.fillStyle = "#2BD4A4"; g.font = "800 46px Montserrat, 'Noto Sans KR', sans-serif"; g.fillText("ANYWAY GREEN", 540, 230);
+  g.fillStyle = "#97A79E"; g.font = "500 34px 'Noto Sans KR', sans-serif"; g.fillText(K("어차피 하는 거, 그린하게.", "You're doing it anyway. Do it green."), 540, 290);
+  const wrapText = (t, maxW) => { const out = []; let line = ""; for (const ch of String(t)) { const tt = line + ch; if (g.measureText(tt).width > maxW && line) { out.push(line); line = ch; } else line = tt; } if (line) out.push(line); return out; };
+  let y = 560;
+  for (const l of lines) {
+    g.fillStyle = l.color || "#EEF3F0";
+    g.font = `${l.w || 700} ${l.s || 48}px ${l.f === "d" ? "Montserrat, " : ""}'Noto Sans KR', sans-serif`;
+    for (const ln of wrapText(l.t, 920)) { y += (l.s || 48) * 1.22; g.fillText(ln, 540, y); }
+    y += l.gap ?? 26;
+  }
+  g.fillStyle = "#EEF3F0"; g.font = "700 38px 'Noto Sans KR', sans-serif"; g.fillText(K("나도 테스트하기 →", "Take the test →"), 540, 1700);
+  g.fillStyle = "#97A79E"; g.font = "500 30px Montserrat, sans-serif"; g.fillText(location.host || "anyway-green", 540, 1756);
+  g.fillText("#어차피그린 #AnywayGreen", 540, 1810);
+  const url = c.toDataURL("image/png");
+  try {
+    const blob = await (await fetch(url)).blob();
+    const file = new File([blob], "anyway-green-story.png", { type: "image/png" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: "Anyway Green", text: alt }); return; }
+  } catch (e) { if (e && e.name === "AbortError") return; }
+  download("anyway-green-story.png", url);
+  toast(K("스토리 이미지를 저장했어요", "Story image saved"));
+}
+
+/* =====================================================================
+   9. 화면 — 머리글·하단 탭
+   ===================================================================== */
+function renderHeader() {
+  const m = me(), r = S.route;
+  const links = m
+    ? [["home", K("홈", "Home")], ["mission", K("인증", "Check in")], ["crew", K("크루", "Crew")], ["rank", K("랭킹", "Ranking")], ["ex", K("교환", "Exchange")]]
+    : [["test", K("그린 테스트", "Green Test")], ["rank", K("랭킹", "Ranking")], ["ex", K("Tip Exchange", "Tip Exchange")]];
+  $("#top").innerHTML = `<div class="wrap in">
+    <button class="brand" data-go="home" aria-label="${K("어차피그린 홈", "Anyway Green home")}"><i aria-hidden="true"></i>ANYWAY GREEN <small>어차피그린</small></button>
+    <nav class="nav" aria-label="${K("주 메뉴", "Main menu")}">${links.map(([k, l]) => `<button data-go="${k}" ${r === k ? 'aria-current="page"' : ""}>${l}</button>`).join("")}${S.admin ? `<button data-go="admin" ${r === "admin" ? 'aria-current="page"' : ""}>${K("운영", "Admin")}</button>` : ""}</nav>
+    <div class="sp"></div>
+    <button class="chipbtn" data-act="big" aria-pressed="${document.documentElement.classList.contains("big")}" title="${K("글자 크게", "Larger text")}">가+</button>
+    <div class="lang" role="group" aria-label="Language"><button data-act="lang" data-v="ko" aria-pressed="${lang === "ko"}">KO</button><button data-act="lang" data-v="en" aria-pressed="${lang === "en"}">EN</button></div>
+    ${m ? `<button class="iconbtn" data-go="me" aria-label="${K("내 정보", "My profile")}" title="${K("내 정보", "My profile")}">${icon("user")}</button>` : `<button class="btn sm" data-go="login">${K("로그인", "Log in")}</button>`}
+  </div>`;
+  const tb = $("#tabbar");
+  if (m) {
+    tb.hidden = false;
+    tb.innerHTML = [["home", "home", K("홈", "Home")], ["mission", "camera", K("인증", "Check in")], ["crew", "crew", K("크루", "Crew")], ["rank", "rank", K("랭킹", "Ranking")], ["ex", "ex", K("교환", "Exchange")]]
+      .map(([k, ic, l]) => `<button data-go="${k}" ${r === k ? 'aria-current="page"' : ""}>${icon(ic)}<span>${l}</span></button>`).join("");
+  } else { tb.hidden = true; tb.innerHTML = ""; }
+  document.documentElement.lang = lang;
+}
+function modeNotice() {
+  if (S.dbError) return `<div class="notice warn small">${K("데이터베이스에 연결하지 못했어요: ", "Couldn't reach the database: ")}${esc(S.dbError)}</div>`;
+  if (S.mode === "local") return `<div class="notice warn small">${K("로컬 모드: 이 브라우저에만 저장돼요. 다른 기기와 공유하려면 Supabase 주소와 키를 설정해 주세요 (배포가이드 참고).", "Local mode: data is saved only in this browser. Add Supabase settings to share across devices.")}</div>`;
+  return "";
+}
+
+/* ---------- 랜딩 (KKTI식 구조: 배지 → 큰 헤드라인 → 글자 타일 → CTA → 섹션들) ---------- */
+function viewLanding() {
+  const nTests = Object.keys(S.tests).length, nApply = Object.keys(S.members).length, c = cfg();
+  const t = today();
+  const tl = [
+    [c.applyDeadline, K(`모집 마감 ${mmdd(c.applyDeadline)}`, `Sign-up closes ${mmdd(c.applyDeadline)}`)],
+    [c.crewReveal, K(`크루 공개 ${mmdd(c.crewReveal)}`, `Crews revealed ${mmdd(c.crewReveal)}`)],
+    [pilotStart(), K(`파일럿 ${mmdd(pilotStart())}–${mmdd(pilotEnd())}`, `Pilot ${mmdd(pilotStart())}–${mmdd(pilotEnd())}`)],
+    [c.deadline, K(`인증 마감 ${mmdd(c.deadline)}`, `Check-ins close ${mmdd(c.deadline)}`)]
+  ];
+  const nowIdx = tl.findIndex(x => t <= x[0]);
+  return `
+  <section class="hero wrap">
+    <span class="badge"><i aria-hidden="true"></i>${K(`PILOT · 3개교 · ${c.weeks}주`, `PILOT · 3 universities · ${c.weeks} weeks`)}</span>
+    <h1 class="h-hero">${K("어차피 하는 거,<br><em>그린하게.</em>", "Doing it anyway?<br><em>Do it green.</em>")}</h1>
+    <p class="lead">${K("새 습관을 더하지 않아요. 이미 하는 행동에 친환경을 붙여요.", "No new habits. Just add green to what you already do.")}</p>
+    <div class="tiles" aria-hidden="true">${TORDER.map(k => `<div class="tile"><b>${k}</b><span>${TRACKS[k].code}</span></div>`).join("")}</div>
+    <p class="tagline">${K("공강 · 시험기간 · 월말 · 주말, 어차피 오는 장면 속 나의 그린 유형", "Breaks, exams, month-end, weekends: your green type in moments you live anyway")}</p>
+    <button class="btn primary lg" data-go="test">${K("그린 테스트 시작하기", "Take the Green Test")}</button>
+    <p class="meta">${K("약 <b>6분</b> · 결과 카드 <b>무료</b>", "About <b>6 min</b> · Result card <b>free</b>")}</p>
+    <div class="timeline">${tl.map((x, i) => `<span class="${i === nowIdx ? "now" : ""}">${x[1]}</span>`).join("")}</div>
+  </section>
+
+  <section class="section"><div class="wrap">
+    <div class="sh"><h2>${K("지금까지 모인 그린", "Green so far")}</h2><p>${K("이 숫자는 모두 실시간 집계예요.", "Every number here is counted live.")}</p></div>
+    <div class="statrow">
+      <div><div class="v num">${fmt(nTests)}</div><div class="k">${K("테스트 완료", "Tests taken")}</div></div>
+      <div><div class="v num">${fmt(nApply)}</div><div class="k">${K("파일럿 신청", "Pilot sign-ups")}</div></div>
+      <div><div class="v num">${c.schools.length}</div><div class="k">${K("참여 대학", "Universities")}</div></div>
+    </div>
+  </div></section>
+
+  <section class="section"><div class="wrap">
+    <div class="sh"><h2>${K("새 행동 말고, 어차피 하는 행동", "Not new actions, actions you already take")}</h2><p>${K("필요한 건 알지만 '하나 더'가 부담이었다면, 순서를 바꿔 봐요.", "If 'one more thing' felt like too much, flip the order.")}</p></div>
+    <div class="vs narrow">
+      <div class="card"><p class="eyebrow" style="color:var(--muted)">${K("보통의 캠페인", "Usual campaigns")}</p><h3 style="margin-top:8px">${K("새로운 행동을 추가하기", "Add a new action")}</h3><p class="small muted" style="margin-top:6px">${K("혼자 · 번거로움 · 금방 잊음", "Alone · a hassle · easy to forget")}</p></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="card" style="border-color:var(--accent)"><p class="eyebrow">${K("어차피그린", "Anyway Green")}</p><h3 style="margin-top:8px">${K("하던 행동에 GREEN 하나 붙이기", "Attach GREEN to what you do")}</h3><p class="small muted" style="margin-top:6px">${K("크루 · 대학 랭킹 · 소속감", "Crews · university ranking · belonging")}</p></div>
+    </div>
+  </div></section>
+
+  <section class="section"><div class="wrap">
+    <div class="sh"><h2>${K("4가지 그린 유형", "Four green types")}</h2><p>${K("12개의 상황 질문으로 나에게 맞는 Track을 찾아요.", "12 everyday scenarios find the track that fits you.")}</p></div>
+    <div class="grid4">${TORDER.map(k => `<div class="card typecard"><div class="tl" aria-hidden="true">${k}</div><span class="code">${TRACKS[k].code}</span><h3>${L(TRACKS[k])}</h3><p class="small muted" style="margin-top:6px">${esc(lang === "en" ? TRACKS[k].den : TRACKS[k].dko)}</p></div>`).join("")}</div>
+  </div></section>
+
+  <section class="section"><div class="wrap">
+    <div class="sh"><h2>${K(`${c.weeks}주, 한 단계씩`, `${c.weeks} weeks, one step at a time`)}</h2><p>${K("주마다 미션이 한 단계씩 열려요.", "A new mission level opens each week.")}</p></div>
+    <div class="grid3">${PHASES.slice(0, c.weeks).map(p => `<div class="card phase"><span class="ph">WEEK ${p.w} · L${p.w}</span><h3>${L(p)}</h3><p class="small muted">${esc(lang === "en" ? p.den : p.dko)}</p><p class="to">${mmdd(addDays(pilotStart(), (p.w - 1) * 7))} – ${mmdd(addDays(pilotStart(), p.w * 7 - 1))}</p></div>`).join("")}</div>
+  </div></section>
+
+  <section class="section"><div class="wrap">
+    <div class="sh"><h2>${K("테스트가 끝나면 알 수 있어요", "What you'll get")}</h2></div>
+    <div class="grid4 know">
+      ${[["leaf", K("메인 유형", "Main type"), K("나에게 맞는 Track과 첫 미션", "Your track and first missions")],
+         ["crew", K("찰떡 크루", "Best-match crew"), K("함께하면 좋은 서브 유형", "The sub-type that pairs with you")],
+         ["layers", K("그린 레벨", "Green level"), K("새싹 · 줄기 · 나무", "Sprout · Stem · Tree")],
+         ["check", K("알고 보니 이미 그린", "Already green"), K("이미 하고 있던 친환경 행동", "Green things you already do")]]
+        .map(([ic, h, d]) => `<div class="card"><div class="ic">${icon(ic)}</div><h3 style="font-size:1.05rem">${h}</h3><p class="small muted" style="margin-top:4px">${d}</p></div>`).join("")}
+    </div>
+  </div></section>
+
+  <section class="section"><div class="wrap narrow">
+    <div class="sh"><h2>${K("결과는 이렇게 나와요", "Your result looks like this")}</h2><p class="small">${K("(예시)", "(sample)")}</p></div>
+    ${resultCardHTML({ main: "S", sub: "C", level: "stem", n: 5, already: ["plug", "print"], score: { C: 4, S: 6, W: 2, D: 1 } }, true)}
+  </div></section>
+
+  <section class="section"><div class="wrap narrow">
+    <div class="sh"><h2>${K("포인트와 리워드", "Points and rewards")}</h2></div>
+    <div class="grid2">
+      <div class="card stack"><b>${K("포인트", "Points")}</b><p class="small muted">${K(`기본 미션 10P · 2·3단계 15P · 공통·보너스 5P<br>하루 ${c.dayCap}P · 한 주 ${c.weekCap}P까지 · 주말 실천도 인정`, `Level 1: 10P · Levels 2–3: 15P · Common/bonus: 5P<br>Up to ${c.dayCap}P a day and ${c.weekCap}P a week · weekends count`)}</p></div>
+      <div class="card stack"><b>${K("리워드", "Rewards")}</b><p class="small muted">${K(`참가자 전원 웰컴 키트 · 평일 ${totalWeekdays()}일 중 ${c.completeDays}일 이상 인증하면 완주 → 1P = ${c.wonPerPoint}원 기프티콘 · 상위 3명 상품권 · 우승 크루·대학 배지`, `Welcome kit for all · Check in on ${c.completeDays} of ${totalWeekdays()} weekdays to finish → 1P = ₩${c.wonPerPoint} voucher · Top 3 gift cards · Badges for the winning crew and university`)}</p></div>
+    </div>
+    <p class="hint" style="text-align:center;margin-top:12px">${K("포인트·리워드 수치는 파일럿에서 검증하는 가정값이에요.", "Point and reward values are assumptions tested in this pilot.")}</p>
+    <div style="text-align:center;margin-top:28px"><button class="btn primary lg" data-go="test">${K("나의 그린 유형 찾기 →", "Find my green type →")}</button></div>
+  </div></section>
+
+  <footer class="foot"><div class="wrap">
+    <b>ANYWAY GREEN</b> · 어차피그린<br>
+    ${K("고려대학교 세종캠퍼스 ESG PBL 팀 프로젝트 · 대학 간 공동캠페인 파일럿", "Korea University Sejong ESG PBL team project · Inter-university campaign pilot")}<br>
+    ${K("참여 대학: ", "Universities: ")}${c.schools.map(esc).join(" · ")}
+    <div class="links"><button data-go="privacy">${K("개인정보 안내", "Privacy")}</button><button data-go="login">${K("참가자 로그인", "Participant login")}</button><button data-go="admin">${K("운영진", "Organizers")}</button></div>
+    <p class="tiny" style="margin-top:12px">${K("※ 그린 테스트는 MBTI식 유형 테스트의 형식을 참고한 자체 제작 테스트예요.", "※ The Green Test is our own quiz, inspired by the format of personality-type tests.")}</p>
+  </div></footer>`;
+}
+
+/* ---------- 결과 카드 ---------- */
+function resultCardHTML(r, sample) {
+  const tr = TRACKS[r.main], sub = TRACKS[r.sub], lv = LEVELS[r.level];
+  const max = 13;
+  const already = r.already.map(id => L(A6_ROWS.find(x => x.id === id))).filter(Boolean);
+  return `<article class="gcard" aria-label="${esc(`${L(lv)} ${L(tr)} · ${K("찰떡 크루", "Best-match crew")}: ${L(sub)}`)}">
+    <span class="lvl">${icon("leaf")}${L(lv)} · ${K("그린 레벨", "Green level")} ${r.n}/12</span>
+    <h2 class="tname">${L(tr)}</h2>
+    <span class="tcode">${tr.code} TRACK</span>
+    <p class="desc">${esc(lang === "en" ? tr.den : tr.dko)}</p>
+    <p class="small muted" style="margin-top:6px">${esc(lang === "en" ? lv.men : lv.mko)}</p>
+    <div class="row" style="margin-top:16px"><span class="pill acc">${K("찰떡 크루", "Best-match crew")}: ${L(sub)}</span></div>
+    ${already.length ? `<p class="small" style="margin-top:12px"><b>${K("이미 하는 중", "Already doing")}</b> · ${already.map(esc).join(", ")}</p>` : `<p class="small muted" style="margin-top:12px">${K("이번 파일럿에서 첫 그린 행동을 붙여 봐요.", "Attach your first green action in this pilot.")}</p>`}
+    ${sample ? "" : `<div class="scorebars" aria-label="${K("트랙별 점수", "Score by track")}">${TORDER.map(k => `<div><span class="num tiny">${TRACKS[k].code}</span><span class="b"><i style="width:${r.score[k] / max * 100}%"></i></span><span class="num tiny">${r.score[k]}</span></div>`).join("")}</div>`}
+  </article>`;
+}
+
+/* ---------- 그린 테스트 ---------- */
+function partLabel(step) {
+  if (step === "base") return K("Part 0 · 기본 정보", "Part 0 · About you");
+  if (step.startsWith("t")) return K("Part 1 · 그린 테스트", "Part 1 · Green Test");
+  if (step === "a6") return K("Part 2 · 알고 보니 이미 그린", "Part 2 · Already green?");
+  if (step === "m") return K("Part 3 · 지금 나의 생활", "Part 3 · Your life now");
+  if (step === "p4") return K("Part 4 · 참여·보상", "Part 4 · Taking part");
+  return "";
+}
+function viewTest() {
+  const st = S.test, step = STEPS[st.i] || "intro";
+  if (st.result && step === "result") return viewResult();
+  if (step === "intro") {
+    return `<div class="wrap narrow stack-lg">
+      <div class="stack" style="text-align:center;align-items:center">
+        <span class="badge"><i aria-hidden="true"></i>GREEN TEST v2</span>
+        <h1 class="h-hero" style="font-size:clamp(2rem,6vw,3rem)">${K("나의 <em>그린 유형</em> 찾기", "Find your <em>green type</em>")}</h1>
+        <p class="muted">${K("정답은 없어요. 가장 나다운 걸 골라 주세요. 끝나면 나의 그린 유형이 나와요!", "There are no right answers. Pick what feels most like you, and your green type appears at the end!")}</p>
+        <p class="meta" style="margin-top:4px">${K("약 <b>6분</b> · 5개 파트 · 결과 카드 <b>무료</b>", "About <b>6 min</b> · 5 parts · Result card <b>free</b>")}</p>
+      </div>
+      <div class="card stack">
+        ${[[K("기본 정보", "About you"), K("20초", "20 sec")], [K("그린 테스트 12문항", "12 Green Test questions"), K("2분", "2 min")], [K("알고 보니 이미 그린 (12행)", "Already green? (12 rows)"), K("1분", "1 min")], [K("지금 나의 생활", "Your life now"), K("2분", "2 min")], [K("참여·보상", "Taking part"), K("40초", "40 sec")]]
+          .map(([a, b], i) => `<div class="row" style="justify-content:space-between"><span><span class="num muted">0${i}</span>&nbsp; ${a}</span><span class="small muted">${b}</span></div>`).join("")}
+      </div>
+      <label class="opt"><input type="checkbox" data-act="consent" ${st.consent ? "checked" : ""}><span class="small">${K("응답을 캠페인 연구용 익명 데이터(사전조사 T0)로 활용하는 데 동의해요. (선택 — 동의하지 않아도 결과는 그대로 나오고, 완료 여부와 유형만 익명으로 집계돼요)", "I agree my answers can be used as anonymous research data (baseline T0). Optional — you still get your result; only completion and type are counted anonymously.")}</span></label>
+      <div style="text-align:center"><button class="btn primary lg" data-act="t-start">${K("시작하기", "Start")}</button></div>
+    </div>`;
+  }
+  const pct = Math.round((st.i - 1) / (STEPS.length - 2) * 100);
+  const head = `<div class="stack"><div class="sec-h"><span class="eyebrow">${partLabel(step)}</span><span class="num small muted">${pct}%</span></div><div class="qbar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div></div>`;
+  const back = `<button class="btn ghost sm" data-act="t-back">← ${K("이전", "Back")}</button>`;
+  if (step === "base") {
+    const b = st.base, schools = [...cfg().schools, "기타"];
+    const ok = b.A1 && b.A2 != null && b.A3 != null;
+    return `<div class="wrap narrow stack-lg">${head}
+      <h1 style="font-size:1.5rem">${K("먼저 간단히 알려 주세요", "A few quick details first")}</h1>
+      <fieldset><legend>A1. ${K("학교", "University")}</legend><div class="chips">${schools.map(s => `<button type="button" class="chip" data-act="tset" data-k="base.A1" data-v="${esc(s)}" aria-pressed="${b.A1 === s}">${esc(s === "기타" ? K("기타", "Other") : s)}</button>`).join("")}</div></fieldset>
+      <fieldset><legend>A2. ${K("학년", "Year")}</legend><div class="chips">${GRADES.map((g, i) => `<button type="button" class="chip" data-act="tset" data-k="base.A2" data-v="${i}" aria-pressed="${b.A2 === i}">${P2(g)}</button>`).join("")}</div></fieldset>
+      <fieldset><legend>A3. ${K("거주 형태", "Where you live")}</legend><div class="chips">${HOMES.map((g, i) => `<button type="button" class="chip" data-act="tset" data-k="base.A3" data-v="${i}" aria-pressed="${b.A3 === i}">${P2(g)}</button>`).join("")}</div></fieldset>
+      <div class="row" style="justify-content:space-between">${back}<button class="btn primary" data-act="t-next" ${ok ? "" : "disabled"}>${K("다음", "Next")}</button></div>
+    </div>`;
+  }
+  if (step.startsWith("t")) {
+    const qi = +step.slice(1), q = TEST[qi];
+    return `<div class="wrap narrow stack-lg">${head}
+      <div class="stack"><span class="num muted">T${qi + 1} / ${TEST.length}</span><h1 style="font-size:clamp(1.4rem,4.6vw,1.9rem)">${L(q)}</h1></div>
+      <div class="answers">${q.a.map((a, i) => `<button data-act="t-ans" data-v="${i}" aria-pressed="${st.t[qi] === i}">${esc(P2(a))}</button>`).join("")}</div>
+      <div>${back}</div>
+    </div>`;
+  }
+  if (step === "a6") {
+    const doneN = Object.keys(st.a6).length;
+    return `<div class="wrap narrow stack-lg">${head}
+      <div class="stack"><h1 style="font-size:1.5rem">${K("알고 보니 이미 그린?", "Already green?")}</h1><p class="muted small">${K("평소에 얼마나 하고 있는지 골라 주세요.", "How often do you do each of these?")} <span class="num">${doneN}/12</span></p></div>
+      <div class="gridq">${A6_ROWS.map(r => `<div class="gq ${st.a6[r.id] != null ? "done" : ""}" role="group" aria-label="${esc(L(r))}"><span>${esc(L(r))}</span><div class="chips">${A6_OPTS.map((o, i) => `<button type="button" class="chip" data-act="tset" data-k="a6.${r.id}" data-v="${i}" aria-pressed="${st.a6[r.id] === i}">${P2(o)}</button>`).join("")}</div></div>`).join("")}</div>
+      <div class="row" style="justify-content:space-between">${back}<button class="btn primary" data-act="t-next" ${doneN === 12 ? "" : "disabled"}>${K("다음", "Next")}</button></div>
+    </div>`;
+  }
+  if (step === "m") {
+    const doneN = MQ.filter(q => st.m[q.id] != null).length;
+    return `<div class="wrap narrow stack-lg">${head}
+      <div class="stack"><h1 style="font-size:1.5rem">${K("지난 7일, 나의 생활", "Your last 7 days")}</h1><p class="muted small">${K("M1~M8은 '며칠이었는지', M9~M12는 '얼마나 그렇다고 생각하는지' 골라 주세요. (1 전혀 아니다 – 5 매우 그렇다)", "M1–M8: how many days. M9–M12: how much you agree (1 not at all – 5 very much).")} <span class="num">${doneN}/${MQ.length}</span></p></div>
+      <div class="gridq">${MQ.map(q => `<div class="gq ${st.m[q.id] != null ? "done" : ""}" role="group" aria-label="${esc(L(q))}"><span><span class="num muted tiny">${q.id}</span> ${esc(L(q))}</span><div class="chips">${(q.type === "days" ? [0, 1, 2, 3, 4, 5, 6, 7] : [1, 2, 3, 4, 5]).map(v => `<button type="button" class="chip sq" data-act="tset" data-k="m.${q.id}" data-v="${v}" aria-pressed="${st.m[q.id] === v}" aria-label="${q.type === "days" ? K(`${v}일`, `${v} days`) : v}">${v}</button>`).join("")}</div></div>`).join("")}</div>
+      <div class="row" style="justify-content:space-between">${back}<button class="btn primary" data-act="t-next" ${doneN === MQ.length ? "" : "disabled"}>${K("다음", "Next")}</button></div>
+    </div>`;
+  }
+  if (step === "p4") {
+    const p = st.p, ok = p.A8 != null && p.A9 != null && p.A10 != null;
+    return `<div class="wrap narrow stack-lg">${head}
+      <h1 style="font-size:1.5rem">${K("마지막! 참여와 보상", "Last one! Taking part")}</h1>
+      <fieldset><legend>A7. ${K("친환경 실천이 어려운 이유 (여러 개 선택)", "What makes green habits hard? (choose any)")}</legend><div class="chips">${A7_OPTS.map((o, i) => `<button type="button" class="chip" data-act="a7" data-v="${i}" aria-pressed="${p.A7.includes(i)}">${P2(o)}</button>`).join("")}</div></fieldset>
+      <fieldset><legend>A8. ${K("가장 편한 인증 방법", "Easiest way to verify")}</legend><div class="chips">${A8_OPTS.map((o, i) => `<button type="button" class="chip" data-act="tset" data-k="p.A8" data-v="${i}" aria-pressed="${p.A8 === i}">${P2(o)}</button>`).join("")}</div></fieldset>
+      <fieldset><legend>A9. ${K("가장 끌리는 보상", "Most appealing reward")}</legend><div class="chips">${A9_OPTS.map((o, i) => `<button type="button" class="chip" data-act="tset" data-k="p.A9" data-v="${i}" aria-pressed="${p.A9 === i}">${P2(o)}</button>`).join("")}</div></fieldset>
+      <fieldset><legend>A10. ${K("3주 파일럿 참여 의향", "Interest in the 3-week pilot")}</legend><div class="chips">${A10_OPTS.map((o, i) => `<button type="button" class="chip" data-act="tset" data-k="p.A10" data-v="${i}" aria-pressed="${p.A10 === i}">${P2(o)}</button>`).join("")}</div></fieldset>
+      <label class="f">A12. ${K("캠페인에 바라는 점 (선택)", "Anything you'd like from this campaign? (optional)")}<textarea name="A12" data-test="p.A12" maxlength="400">${esc(p.A12 || "")}</textarea></label>
+      <div class="row" style="justify-content:space-between">${back}<button class="btn primary" data-act="t-finish" ${ok && !S.busy ? "" : "disabled"}>${K("결과 보기", "See my result")}</button></div>
+    </div>`;
+  }
+  return viewResult();
+}
+function viewResult() {
+  const st = S.test, r = st.result;
+  if (!r) { S.test = newTest(); saveTest(); return viewTest(); }
+  const m = me();
+  return `<div class="wrap narrow stack-lg">
+    <div style="text-align:center"><span class="eyebrow">${K("나의 그린 유형", "Your green type")}</span></div>
+    ${resultCardHTML(r)}
+    <div class="card stack" style="text-align:center">
+      <b>R1. ${K("이 결과가 나와 얼마나 맞나요?", "How well does this result fit you?")}</b>
+      <div class="chips" style="justify-content:center">${[1, 2, 3, 4, 5].map(v => `<button class="chip sq" data-act="r1" data-v="${v}" aria-pressed="${st.r1 === v}">${v}</button>`).join("")}</div>
+      <p class="hint">${K("1 전혀 안 맞아요 · 5 완전 나예요", "1 not at all · 5 totally me")}</p>
+    </div>
+    <div class="row" style="justify-content:center">
+      ${m ? "" : `<button class="btn primary lg" data-go="apply">${K("이 결과로 파일럿 신청하기", "Join the pilot with this result")}</button>`}
+      <button class="btn" data-act="share-result">${icon("link")}${K("결과 링크 공유", "Share link")}</button>
+      <button class="btn" data-act="story-result">${K("인스타 스토리 이미지", "Instagram story image")}</button>
+    </div>
+    <div style="text-align:center"><button class="btn ghost sm" data-act="retake">${K("다시 하기", "Retake")}</button></div>
+  </div>`;
+}
+
+/* ---------- 참가 신청 ---------- */
+function viewApply() {
+  if (me()) return viewHome();
+  const r = S.test.result;
+  if (!r) return `<div class="wrap narrow stack-lg"><div class="notice">${K("먼저 그린 테스트를 마쳐 주세요. 결과 화면에서 바로 신청할 수 있어요.", "Please finish the Green Test first. You can sign up right from the result screen.")}</div><div><button class="btn primary" data-go="test">${K("그린 테스트 시작", "Start the Green Test")}</button></div></div>`;
+  const d = S.draft, c = cfg(), late = today() > c.applyDeadline;
+  const school = d.school || (c.schools.includes(S.test.base.A1) ? S.test.base.A1 : "");
+  const av = d.avail || [];
+  return `<form class="wrap narrow stack-lg" id="applyForm" novalidate>
+    <div class="stack"><span class="eyebrow">${L(TRACKS[r.main])} · ${TRACKS[r.main].code}</span><h1 class="display" style="font-size:2rem">${K("파일럿 참여 신청", "Join the pilot")}</h1>
+      <p class="muted small">${K(`크루는 운영진이 같은 Track·서로 다른 학교·겹치는 시간대를 기준으로 직접 배정해요. ${mmdd(c.crewReveal)}에 공개돼요.`, `Organizers place you in a crew by track, mixed universities and shared hours. Crews are revealed on ${mmdd(c.crewReveal)}.`)}</p></div>
+    ${late ? `<div class="notice warn">${K(`모집이 마감됐어요(${mmdd(c.applyDeadline)}). 지금 신청하면 예비 명단으로 등록돼요.`, `Sign-up closed on ${mmdd(c.applyDeadline)}. You'll join the waitlist.`)}</div>` : ""}
+    ${modeNotice()}
+    <label class="f">${K("닉네임 (랭킹·크루에 공개)", "Nickname (shown on rankings and your crew)")}<input type="text" name="nick" maxlength="14" value="${esc(d.nick || "")}" autocomplete="nickname" required><span class="hint">${K("실명·학번은 쓰지 마세요.", "Don't use your real name or student ID.")}</span></label>
+    <label class="f">${K("실명 (비공개 · 리워드 지급용)", "Real name (private · for rewards)")}<input type="text" name="realName" maxlength="20" value="${esc(d.realName || "")}" autocomplete="name" required></label>
+    <label class="f">${K("연락처 (비공개 · 카카오톡 ID 또는 전화번호)", "Contact (private · KakaoTalk ID or phone)")}<input type="text" name="contact" maxlength="40" value="${esc(d.contact || "")}" required><span class="hint">${K("운영진이 카카오톡으로 직접 안내해요.", "Organizers will reach you on KakaoTalk.")}</span></label>
+    <label class="f">${K("학교", "University")}<select name="school" required><option value="" ${school ? "" : "selected"} disabled>${K("선택해 주세요", "Choose")}</option>${c.schools.map(s => `<option value="${esc(s)}" ${school === s ? "selected" : ""}>${esc(s)}</option>`).join("")}</select></label>
+    <fieldset><legend>${K("연락 가능한 시간대 (여러 개 선택)", "When can you chat? (choose any)")}</legend><div class="chips">${[["wd_day", "평일 낮", "Weekday daytime"], ["wd_eve", "평일 저녁", "Weekday evening"], ["we", "주말", "Weekend"]].map(([v, k, e]) => `<button type="button" class="chip" data-act="avail" data-v="${v}" aria-pressed="${av.includes(v)}">${K(k, e)}</button>`).join("")}</div></fieldset>
+    <label class="f">${K("크루 소통 언어", "Crew language")}<select name="eng">${[["ko", "한국어", "Korean"], ["en", "영어가 필요해요", "I need English"], ["both", "둘 다 가능 (영어 도움 가능)", "Both (I can help in English)"]].map(([v, k, e]) => `<option value="${v}" ${(d.eng || "ko") === v ? "selected" : ""}>${K(k, e)}</option>`).join("")}</select></label>
+    <label class="f">${K("함께 신청한 친구 코드 (선택)", "Friend group code (optional)")}<input type="text" name="friend" maxlength="12" value="${esc(d.friend || "")}" style="text-transform:uppercase"><span class="hint">${K("같이 신청하는 친구와 같은 단어를 적어 주세요. 한 크루에 최대 2명까지 함께 배정돼요.", "Type the same word as your friend. Up to 2 friends per crew.")}</span></label>
+    <fieldset class="stack"><legend>${K("편하게 참여할 수 있도록 (선택)", "Help us include you (optional)")}</legend>
+      <label class="opt"><input type="checkbox" name="mobility" ${d.mobility ? "checked" : ""}><span class="small">${K("이동이 어려워요 → 걷기 미션 대신 같은 점수의 대체 미션이 열려요", "Moving around is hard for me → same-point alternative missions instead of walking")}</span></label>
+      <label class="opt"><input type="checkbox" name="photoHard" ${d.photoHard ? "checked" : ""}><span class="small">${K("사진 찍기가 어려워요 → 버디 인증 한도가 늘고 글 인증을 쓸 수 있어요", "Taking photos is hard for me → more buddy checks and text check-ins")}</span></label>
+    </fieldset>
+    <label class="f">${K("PIN 4자리 (로그인용)", "4-digit PIN (for login)")}<input type="password" name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" value="${esc(d.pin || "")}" required><span class="hint">${K("신청하면 참가자 코드가 나와요. 코드 + PIN으로 다른 기기에서도 로그인해요.", "You'll get a participant code. Use code + PIN to log in on any device.")}</span></label>
+    <fieldset class="stack"><legend>${K("동의", "Consent")}</legend>
+      <label class="opt"><input type="checkbox" name="agree" ${d.agree ? "checked" : ""} required><span class="small">${K("(필수) 실명·연락처를 파일럿 운영(크루 안내·리워드 지급)에만 쓰고, 파일럿 종료 후 파기하는 데 동의해요. 인증 사진에는 얼굴·결제 정보가 나오지 않게 할게요.", "(Required) My name and contact are used only to run the pilot (crew notices, rewards) and deleted afterward. I'll keep faces and payment details out of photos.")} <button type="button" class="btn ghost sm" data-go="privacy" style="min-height:28px;padding:0 8px">${K("자세히", "Details")}</button></span></label>
+      <label class="opt"><input type="checkbox" name="interview" ${d.interview ? "checked" : ""}><span class="small">${K("(선택) 파일럿 후 10~15분 인터뷰 연락을 받아도 좋아요.", "(Optional) You may contact me for a 10–15 min interview after the pilot.")}</span></label>
+    </fieldset>
+    <div><button class="btn primary lg" type="submit" ${S.busy ? "disabled" : ""}>${K("신청 완료", "Sign up")}</button></div>
+  </form>`;
+}
+function viewApplied() {
+  const m = me();
+  if (!m) return viewHome();
+  return `<div class="wrap narrow stack-lg" style="text-align:center">
+    <span class="badge" style="align-self:center"><i aria-hidden="true"></i>${m.status === "reserve" ? K("예비 명단 등록", "On the waitlist") : K("신청 완료", "You're in")}</span>
+    <h1 class="h-hero" style="font-size:clamp(1.8rem,6vw,2.6rem)">${K(`${esc(m.nickname)}님, <em>환영해요!</em>`, `Welcome, <em>${esc(m.nickname)}</em>!`)}</h1>
+    <div class="card stack" style="align-items:center">
+      <span class="small muted">${K("나의 참가자 코드", "Your participant code")}</span>
+      <span class="codebox">${esc(m.code)}</span>
+      <button class="btn sm" data-act="copy" data-v="${esc(m.code)}">${K("코드 복사", "Copy code")}</button>
+      <p class="small muted">${K("코드와 PIN을 꼭 기억해 주세요. 다른 기기에서 로그인할 때 필요해요.", "Keep your code and PIN. You'll need them to log in on another device.")}</p>
+    </div>
+    <p class="muted">${K(`크루는 ${mmdd(cfg().crewReveal)}에 공개되고, ${mmdd(pilotStart())}부터 인증할 수 있어요.`, `Crews are revealed on ${mmdd(cfg().crewReveal)}; check-ins start ${mmdd(pilotStart())}.`)}</p>
+    <div class="row" style="justify-content:center"><button class="btn primary" data-go="home">${K("홈으로", "Go home")}</button><button class="btn" data-act="share-result">${K("친구에게 테스트 공유", "Share the test")}</button></div>
+  </div>`;
+}
+
+/* ---------- 로그인 ---------- */
+function viewLogin() {
+  if (me()) return viewHome();
+  const d = S.draft;
+  return `<form class="wrap narrow stack-lg" id="loginForm" novalidate style="max-width:460px">
+    <h1 class="display" style="font-size:2rem">${K("참가자 로그인", "Participant login")}</h1>
+    ${modeNotice()}
+    <label class="f">${K("참가자 코드", "Participant code")}<input type="text" name="lcode" value="${esc(d.lcode || "")}" placeholder="AG-XXXX" style="text-transform:uppercase;font-family:var(--f-display);letter-spacing:.1em" autocomplete="username"></label>
+    <label class="f">PIN<input type="password" name="lpin" inputmode="numeric" maxlength="4" value="" autocomplete="current-password"></label>
+    <div><button class="btn primary" type="submit">${K("로그인", "Log in")}</button></div>
+    <p class="small muted">${K("아직 신청하지 않았다면 그린 테스트부터 해 주세요.", "Not signed up yet? Start with the Green Test.")} <button type="button" class="btn ghost sm" data-go="test">${K("그린 테스트", "Green Test")}</button></p>
+  </form>`;
+}
+
+/* ---------- 참가자 홈 ---------- */
+function weekStrip() {
+  const w = curWeek(), n = cfg().weeks;
+  return `<div class="weeks" style="--n:${n}" aria-hidden="true">${Array.from({ length: n }, (_, i) => `<div class="${i + 1 < w ? "done" : i + 1 === w ? "now" : ""}"></div>`).join("")}</div>`;
+}
+function pendingSurveys(m) {
+  const out = [], w = curWeek(), n = cfg().weeks, t = today();
+  if (!isActive(m)) return out;
+  for (let k = 1; k <= Math.min(n, Math.max(0, w)); k++) {
+    const due = k < w || (k === w && dow(t) === 0) || (k === w && dow(t) === 6);
+    if (due && !S.reflections[m.code + "_w" + k]) { out.push(["ref", k, K(`W${k} 성찰일지 (3문항)`, `Week ${k} reflection (3 questions)`)]); break; }
+  }
+  if (w === 2 && !S.checkins[m.code]) out.push(["mid", 2, K("1분 중간 체크인", "1-minute mid check-in")]);
+  if (t > pilotEnd() && !S.t1[m.code]) out.push(["t1", 0, K("사후 설문 (T1) · 약 3분", "Post survey (T1) · ~3 min")]);
+  return out;
+}
+function viewHome() {
+  const m = me(); if (!m) return viewLanding();
+  const c = cfg(), w = curWeek(), t = today(), u = U(m.code);
+  const crew = m.crewId && S.crews[m.crewId];
+  const ann = lang === "en" ? (c.annEn || c.annKo) : (c.annKo || c.annEn);
+  const surveys = pendingSurveys(m);
+  const wdN = totalWeekdays(), wdDone = u.wd.size;
+  const crewRank = crewRanking(null), ci = crewRank.findIndex(x => x.id === m.crewId);
+  const bars = Array.from({ length: c.weeks }, (_, i) => pts(m.code, i + 1));
+  return `<div class="wrap stack-lg">
+    <section class="card stack" style="padding:26px;position:relative;overflow:hidden">
+      <span class="eyebrow">${phaseLabel()}</span>
+      <h1 class="display" style="font-size:clamp(1.6rem,5vw,2.4rem)">${K(`${esc(m.nickname)}님, 이번 주도 어차피 그린`, `${esc(m.nickname)}, keep it green this week`)}</h1>
+      ${weekStrip()}
+      <div class="row"><span class="pill acc">${L(TRACKS[m.track || m.main])}</span><span class="small muted">${esc(m.school)}</span>${crew ? `<span class="small muted">· ${esc(crew.name)}</span>` : ""}</div>
+      <div class="row">${isActive(m) ? `<button class="btn primary" data-go="mission">${K("오늘 미션 인증하기", "Check in today's mission")}</button>` : ""}<button class="btn" data-go="crew">${K("우리 크루", "My crew")}</button></div>
+    </section>
+    ${m.status === "applied" ? `<div class="notice">${K(`신청 완료! 크루는 ${mmdd(c.crewReveal)}에 공개돼요.`, `Signed up! Crews are revealed on ${mmdd(c.crewReveal)}.`)}</div>` : ""}
+    ${m.status === "reserve" ? `<div class="notice warn">${K("예비 명단이에요. 자리가 나면 운영진이 카카오톡으로 연락드려요.", "You're on the waitlist. We'll message you if a spot opens.")}</div>` : ""}
+    ${m.status === "replaced" ? `<div class="notice warn">${K("이번 파일럿 참여가 종료됐어요. 문의는 운영진에게 해 주세요.", "Your pilot participation has ended. Please contact the organizers.")}</div>` : ""}
+    ${ann ? `<div class="notice"><b class="small">${K("운영진 공지", "Announcement")}</b><p>${esc(ann)}</p></div>` : ""}
+    ${surveys.length ? `<div class="card soft stack"><b>${K("작성할 설문", "To fill in")}</b><div class="row">${surveys.map(([k, ww, l]) => `<button class="btn sm primary" data-go="survey/${k}${ww ? "-" + ww : ""}">${l}</button>`).join("")}</div></div>` : ""}
+    <section class="grid3">
+      <div class="card stat"><span class="k">${K("누적 포인트", "Total points")}</span><span class="v">${fmt(u.total)}<small>/ ${c.weekCap * c.weeks}P</small></span></div>
+      <div class="card stat"><span class="k">${K("오늘", "Today")}</span><span class="v">${fmt(u.day[t] || 0)}<small>/ ${c.dayCap}P</small></span></div>
+      <div class="card stat"><span class="k">${K("이번 주", "This week")}</span><span class="v">${fmt(w >= 1 && w <= c.weeks ? (u.week[w] || 0) : 0)}<small>/ ${c.weekCap}P</small></span></div>
+      <div class="card stat"><span class="k">${K("완주까지 (평일 인증일)", "To finish (weekday check-ins)")}</span><span class="v">${wdDone}<small>/ ${wdN}${K("일", "d")}</small></span><div class="bar" aria-hidden="true"><i style="width:${Math.min(100, wdDone / c.completeDays * 100)}%"></i></div><span class="k">${wdDone >= c.completeDays ? K("완주 달성!", "Finished!") : K(`${c.completeDays - wdDone}일 더 인증하면 완주`, `${c.completeDays - wdDone} more weekdays to finish`)}</span></div>
+      <div class="card stat"><span class="k">${K("예상 기프티콘", "Estimated voucher")}</span><span class="v">₩${fmt(u.total * c.wonPerPoint)}</span><span class="k">${K(`완주 시 지급 · 1P = ${c.wonPerPoint}원`, `Paid if you finish · 1P = ₩${c.wonPerPoint}`)}</span></div>
+      <div class="card stat"><span class="k">${K("우리 크루 순위", "Crew rank")}</span><span class="v">${ci >= 0 ? `${ci + 1}<small>/ ${crewRank.length}</small>` : "–"}</span><span class="k">${K("1인당 평균 포인트 기준", "By average points per person")}</span></div>
+    </section>
+    <section class="card stack"><div class="sec-h"><h2>${K("주차별 포인트", "Points by week")}</h2></div>
+      <div class="reportbars" style="--n:${c.weeks}">${bars.map((b, i) => `<div class="col"><span class="num small">${b}</span><span class="b" style="height:${Math.max(3, b / c.weekCap * 80)}px"></span><em>W${i + 1}</em></div>`).join("")}</div>
+    </section>
+  </div>`;
+}
+
+/* ---------- 미션 인증 ---------- */
+function myBuddyUsed(m, w) { return Object.values(S.proofs).filter(p => p.code === m.code && p.method === "buddy" && p.week === w && p.status !== "rejected" && p.status !== "cancelled").length; }
+function viewMission() {
+  const m = me();
+  if (!m) return `<div class="wrap narrow stack-lg"><div class="notice">${K("파일럿 참가자만 인증할 수 있어요.", "Only pilot participants can check in.")}</div><div><button class="btn primary" data-go="test">${K("그린 테스트 시작", "Start the Green Test")}</button></div></div>`;
+  if (!isActive(m)) return `<div class="wrap narrow stack-lg"><h1 class="display" style="font-size:2rem">${K("미션 인증", "Mission check-in")}</h1><div class="notice">${K(`크루 배정 후 ${mmdd(pilotStart())}부터 인증할 수 있어요.`, `You can check in from ${mmdd(pilotStart())} once you're in a crew.`)}</div>${missionPreview(m)}</div>`;
+  const c = cfg(), d = S.draft, t = today(), yest = addDays(t, -1);
+  const dayOpts = [[t, K("오늘", "Today")], [yest, K("어제", "Yesterday")]].filter(([x]) => canUploadFor(x));
+  if (!d.day || !dayOpts.some(([x]) => x === d.day)) d.day = dayOpts[0] ? dayOpts[0][0] : null;
+  const actDay = d.day, w = actDay ? weekOfDay(actDay) : curWeek();
+  const tr = m.track || m.main;
+  const used = actDay ? Object.values(S.proofs).filter(p => p.code === m.code && p.day === actDay && !["rejected", "cancelled"].includes(p.status)).map(p => p.missionId) : [];
+  const bonusOn = w >= 3 && tr !== "S";
+  const groups = [
+    [K(`${TRACKS[tr].code} 미션`, `${TRACKS[tr].code} missions`), MISSIONS.filter(x => x.tr === tr), false],
+    [K("공통 미션 (전 Track)", "Common missions (all tracks)"), MISSIONS.filter(x => x.tr === "X"), false]
+  ];
+  if (m.mobility) groups.push([K("대체 미션 (같은 점수)", "Alternative missions (same points)"), MISSIONS.filter(x => x.tr === "Z"), false]);
+  if (bonusOn) groups.push([K("W3 보너스 · STUDY 미션", "Week 3 bonus · STUDY missions"), MISSIONS.filter(x => x.tr === "S"), true]);
+  const sel = d.mission && MISSION[d.mission], selBonus = !!(sel && d.bonus);
+  const bLimit = m.photoHard ? c.buddyPerWeekUD : c.buddyPerWeek, bUsed = myBuddyUsed(m, w);
+  const crewmates = crewMembers(m.crewId).filter(x => x.code !== m.code);
+  const methods = [["photo", K("사진", "Photo"), K("촬영 시각이 남은 사진", "A photo with its timestamp")], ["capture", K("화면 캡처", "Screenshot"), K("스크린타임·교통카드 내역 등", "Screen time, transit card history…")], ["buddy", K("버디 인증", "Buddy check"), K(`크루원이 대신 확인 · 이번 주 ${bUsed}/${bLimit}회`, `A crewmate confirms · ${bUsed}/${bLimit} this week`)]];
+  if (m.photoHard) methods.push(["text", K("글 인증", "Text"), K("무엇을 했는지 짧게 적기", "Describe what you did")]);
+  const mine = Object.entries(S.proofs).filter(([, p]) => p.code === m.code).sort((a, b) => b[1].createdAt - a[1].createdAt);
+  const u = U(m.code);
+  return `<div class="wrap stack-lg">
+    <div class="stack"><span class="eyebrow">${phaseLabel()}</span><h1 class="display" style="font-size:2rem">${K("미션 인증", "Mission check-in")}</h1><p class="muted">${K("어차피 하던 행동에 GREEN 하나 더하기", "Add one green step to something you already do")}</p></div>
+    ${!dayOpts.length ? `<div class="notice warn">${t < pilotStart() ? K(`${mmdd(pilotStart())}부터 인증할 수 있어요. 미리 미션을 둘러보세요.`, `Check-ins open ${mmdd(pilotStart())}. Have a look around.`) : K("인증 기간이 끝났어요. 수고 많으셨어요!", "Check-ins are closed. Thanks for taking part!")}</div>` : `
+    <div class="row"><span class="small muted">${K("실천한 날", "Day of action")}</span>${dayOpts.map(([x, l]) => `<button class="chip" data-act="pickday" data-v="${x}" aria-pressed="${d.day === x}">${l} ${mmdd(x)}</button>`).join("")}<span class="small muted">· ${K("이날", "That day")} <span class="num">${u.day[actDay] || 0}/${c.dayCap}P</span> · W${w} <span class="num">${u.week[w] || 0}/${c.weekCap}P</span></span></div>`}
+    ${groups.map(([title, list, bonus]) => `<section class="stack"><div class="sec-h"><h2>${title}</h2></div><div class="missions">${list.map(x => {
+      const locked = x.lv > 0 && !bonus && x.lv > Math.max(1, Math.min(3, w));
+      const done = used.includes(x.id);
+      const p = missionPoints(x, bonus);
+      return `<button class="mission" data-act="pick-mission" data-v="${x.id}" data-b="${bonus ? 1 : 0}" aria-pressed="${d.mission === x.id && !!d.bonus === bonus}" ${locked || done || !dayOpts.length ? "disabled" : ""}>
+        ${done ? `<span class="stamp">${K("완료", "DONE")}</span>` : ""}
+        <span class="row" style="gap:6px"><span class="pts">+${p}P</span>${x.lv ? `<span class="pill">L${x.lv}</span>` : ""}${bonus ? `<span class="pill gold">BONUS</span>` : ""}</span>
+        <span>${esc(L(x))}</span>
+        ${locked ? `<span class="hint">${icon("lock")} ${K(`W${x.lv}에 열려요`, `Opens in week ${x.lv}`)}</span>` : ""}
+      </button>`; }).join("")}</div></section>`).join("")}
+    ${dayOpts.length ? `<form class="card stack" id="proofForm" novalidate>
+      <div class="sec-h"><h2>${sel ? esc(L(sel)) : K("위에서 미션을 골라 주세요", "Pick a mission above")}</h2>${sel ? `<span class="num" style="color:var(--accent)">+${missionPoints(sel, selBonus)}P</span>` : ""}</div>
+      <fieldset><legend>${K("인증 방법", "How to verify")}</legend><div class="grid2">${methods.map(([v, l, h]) => `<label class="opt"><input type="radio" name="method" value="${v}" ${(d.method || "photo") === v ? "checked" : ""} ${v === "buddy" && (bUsed >= bLimit || !crewmates.length) ? "disabled" : ""}><span><b>${l}</b><br><span class="hint">${h}</span></span></label>`).join("")}</div></fieldset>
+      ${["photo", "capture"].includes(d.method || "photo") ? `<label class="f">${(d.method || "photo") === "photo" ? K("사진 올리기", "Upload a photo") : K("캡처 올리기", "Upload a screenshot")}<input type="file" id="p_file" accept="image/*"><span class="hint">${K("얼굴·학번·결제 정보가 보이지 않게 해 주세요. 자동으로 작게 줄여 저장돼요.", "Keep faces, student IDs and payment details out. Images are resized automatically.")}</span></label>
+        ${d.photo ? `<img class="preview" src="${d.photo}" alt="${K("올릴 사진 미리보기", "Preview of the image to upload")}">${d.shotNote ? `<p class="hint">${esc(d.shotNote)}</p>` : ""}` : ""}` : ""}
+      ${(d.method) === "buddy" ? `<label class="f">${K("확인해 줄 크루원", "Crewmate who'll confirm")}<select name="buddy">${crewmates.map(x => `<option value="${esc(x.code)}" ${d.buddy === x.code ? "selected" : ""}>${esc(x.nickname)}</option>`).join("")}</select><span class="hint">${K("크루원이 '크루' 화면에서 확인하면 포인트가 들어와요.", "Points arrive once they confirm in the Crew tab.")}</span></label>` : ""}
+      <label class="f">${d.method === "text" ? K("무엇을 했나요? (필수)", "What did you do? (required)") : K("한 줄 메모 (선택)", "Short note (optional)")}<textarea name="note" maxlength="300">${esc(d.note || "")}</textarea></label>
+      <div><button class="btn primary" type="submit" ${S.busy ? "disabled" : ""}>${K("인증 올리기", "Submit check-in")}</button></div>
+    </form>` : ""}
+    <section class="stack"><div class="sec-h"><h2>${K("내 인증 기록", "My check-ins")}</h2><span class="small muted">${K(`평일 인증 ${u.wd.size}/${totalWeekdays()}일`, `Weekday check-ins ${u.wd.size}/${totalWeekdays()}`)}</span></div>
+      ${mine.length ? `<div class="feed">${mine.slice(0, 40).map(([id, p]) => proofCard(id, p)).join("")}</div>` : `<p class="muted">${K("아직 없어요.", "Nothing yet.")}</p>`}
+    </section>
+  </div>`;
+}
+function missionPreview(m) {
+  const tr = m.track || m.main;
+  return `<section class="stack"><div class="sec-h"><h2>${K(`미리 보기 · ${TRACKS[tr].code}`, `Preview · ${TRACKS[tr].code}`)}</h2></div><div class="missions">${MISSIONS.filter(x => x.tr === tr || x.tr === "X").map(x => `<div class="mission" style="cursor:default"><span class="row" style="gap:6px"><span class="pts">+${missionPoints(x)}P</span>${x.lv ? `<span class="pill">L${x.lv} · W${x.lv}</span>` : ""}</span><span>${esc(L(x))}</span></div>`).join("")}</div></section>`;
+}
+function statusPill(p) {
+  if (p.status === "approved") return `<span class="pill ok">${icon("check")}${K("인정", "Approved")}</span>`;
+  if (p.status === "cancelled") return `<span class="pill bad">${K("취소", "Cancelled")}</span>`;
+  if (p.status === "rejected") return `<span class="pill bad">${K("반려", "Rejected")}</span>`;
+  return `<span class="pill wait">${K("버디 확인 대기", "Waiting for buddy")}</span>`;
+}
+const METHOD_L = { photo: ["사진", "Photo"], capture: ["캡처", "Screenshot"], buddy: ["버디", "Buddy"], text: ["글", "Text"] };
+function proofCard(id, p, opts = {}) {
+  const mi = MISSION[p.missionId], who = S.members[p.code], g = U(p.code).gain[id];
+  return `<article class="post ${p.hasPhoto ? "withph" : ""}">
+    ${p.hasPhoto ? `<img class="ph" data-photo="${esc(id)}" alt="${esc(K("인증 사진: ", "Check-in photo: ") + L(mi || {}))}">` : ""}
+    <div class="body">
+      <div class="row">${statusPill(p)}<span class="pill">${P2(METHOD_L[p.method] || ["", ""])}</span><span class="pill">W${p.week} · ${mmdd(p.day)}</span>${p.bonus ? `<span class="pill gold">BONUS</span>` : ""}${opts.admin && p.exifMismatch ? `<span class="pill wait">${K("촬영일 다름", "Date mismatch")}</span>` : ""}</div>
+      <b>${esc(mi ? L(mi) : p.missionId)} <span class="num" style="color:var(--accent)">+${p.status === "approved" && g != null ? g : p.points}P</span>${p.status === "approved" && g != null && g < p.points ? ` <span class="hint">(${K("상한 적용", "cap applied")})</span>` : ""}</b>
+      ${p.note ? `<p class="small">${esc(p.note)}</p>` : ""}
+      ${p.reason ? `<p class="small" style="color:var(--bad)">${K("사유", "Reason")}: ${esc(p.reason)}</p>` : ""}
+      <span class="meta2">${esc(who ? who.nickname : "")}${opts.admin && who ? ` · ${esc(who.code)} · ${esc(who.school)}` : ""}${p.method === "buddy" && S.members[p.buddy] ? ` · ${K("버디", "Buddy")}: ${esc(S.members[p.buddy].nickname)}` : ""}</span>
+      ${opts.buddy ? `<div class="row"><button class="btn sm primary" data-act="buddy-ok" data-v="${esc(id)}">${K("확인했어요", "Confirm")}</button><button class="btn sm ghost" data-act="buddy-no" data-v="${esc(id)}">${K("못 봤어요", "I didn't see it")}</button></div>` : ""}
+      ${opts.admin ? `<div class="row">${p.status === "approved" ? `<button class="btn sm danger" data-act="cancel-proof" data-v="${esc(id)}">${K("포인트 취소", "Cancel points")}</button>` : ""}${p.status === "pending" ? `<button class="btn sm primary" data-act="approve-proof" data-v="${esc(id)}">${K("승인", "Approve")}</button>` : ""}${p.status === "cancelled" ? `<button class="btn sm" data-act="restore-proof" data-v="${esc(id)}">${K("취소 되돌리기", "Undo cancel")}</button>` : ""}</div>` : ""}
+    </div></article>`;
+}
+
+/* ---------- 크루 ---------- */
+function viewCrew() {
+  const m = me();
+  if (!m) return `<div class="wrap narrow stack-lg"><div class="notice">${K("파일럿 참가자 전용이에요.", "For pilot participants only.")}</div></div>`;
+  const c = cfg(), crew = m.crewId && S.crews[m.crewId];
+  if (!crew || today() < c.crewReveal) return `<div class="wrap narrow stack-lg"><h1 class="display" style="font-size:2rem">${K("우리 크루", "My crew")}</h1><div class="notice">${K(`크루는 ${mmdd(c.crewReveal)}에 공개돼요. 운영진이 같은 Track · 서로 다른 학교 · 겹치는 시간대로 묶어요.`, `Crews are revealed on ${mmdd(c.crewReveal)}, grouped by track, mixed universities and shared hours.`)}</div></div>`;
+  const mates = crewMembers(m.crewId), w = Math.max(1, Math.min(c.weeks, curWeek()));
+  const reqs = Object.entries(S.proofs).filter(([, p]) => p.method === "buddy" && p.buddy === m.code && p.status === "pending");
+  const feed = Object.entries(S.proofs).filter(([, p]) => p.crewId === m.crewId && !["cancelled"].includes(p.status)).sort((a, b) => b[1].createdAt - a[1].createdAt);
+  const rk = crewRanking(null), idx = rk.findIndex(x => x.id === m.crewId);
+  return `<div class="wrap stack-lg">
+    <section class="card stack" style="padding:26px">
+      <span class="eyebrow">${K("우리 크루", "My crew")} · ${TRACKS[crew.track] ? TRACKS[crew.track].code : ""}</span>
+      <h1 class="display" style="font-size:clamp(1.7rem,5vw,2.5rem)">${esc(crew.name)}</h1>
+      <div class="row"><span class="small muted">${[...new Set(mates.map(x => x.school))].map(esc).join(" · ")}</span>${idx >= 0 ? `<span class="pill gold">${icon("medal")}${K(`크루 ${idx + 1}위`, `Crew #${idx + 1}`)}</span>` : ""}</div>
+    </section>
+    ${reqs.length ? `<section class="stack"><div class="sec-h"><h2>${K("확인 요청이 왔어요", "Buddy requests for you")}</h2><span class="pill wait">${reqs.length}</span></div><div class="feed">${reqs.map(([id, p]) => proofCard(id, p, { buddy: true })).join("")}</div></section>` : ""}
+    <section class="stack"><div class="sec-h"><h2>${K("크루원", "Members")}</h2><span class="small muted">${mates.length}${K("명", "")}</span></div>
+      <div class="grid3">${mates.map(x => {
+        const wd = Object.values(S.proofs).filter(p => p.code === x.code && p.week === w && p.status === "approved").map(p => p.day);
+        return `<div class="card"><b>${esc(x.nickname)}${x.code === m.code ? ' <span class="pill acc">ME</span>' : ""}</b><p class="small muted">${esc(x.school)} · ${L(TRACKS[x.main])}</p><p class="small">${K(`W${w} 인증 ${new Set(wd).size}일`, `Week ${w}: ${new Set(wd).size} days`)}</p></div>`;
+      }).join("")}</div></section>
+    <section class="stack"><div class="sec-h"><h2>${K("크루 인증 피드", "Crew feed")}</h2></div>
+      ${feed.length ? `<div class="feed">${feed.slice(0, 40).map(([id, p]) => proofCard(id, p)).join("")}</div>` : `<p class="muted">${K("첫 인증을 올려 크루를 깨워 보세요!", "Post the first check-in and wake your crew up!")}</p>`}
+    </section>
+  </div>`;
+}
+
+/* ---------- 랭킹 ---------- */
+function rankLabel(i) {
+  const medal = i < 3 ? icon("medal", K(`${i + 1}위`, `Rank ${i + 1}`)) : "";
+  return `<span class="rk">${medal}<span>${K(`${i + 1}위`, `#${i + 1}`)}</span></span>`;
+}
+function viewRank() {
+  const c = cfg(), w0 = curWeek(), m = me();
+  const defW = w0 >= 1 && w0 <= c.weeks ? w0 : null;
+  const w = S.rankW === undefined || S.rankW === null ? (S.rankW === null && S.rankWSet ? null : defW) : S.rankW;
+  const tab = S.rankTab;
+  let rows = "", top = 1;
+  if (tab === "school") {
+    const list = schoolRanking(w); top = Math.max(1, ...list.map(x => x.score));
+    rows = list.map((x, i) => `<div class="lb ${i === 0 && x.score > 0 ? "r1" : ""} ${m && m.school === x.s ? "mine" : ""}">${rankLabel(i)}<div class="nm"><b>${esc(x.s)}</b><span class="small muted">${x.n}${K("명", " people")}</span><div class="bar"><i style="width:${x.score / top * 100}%"></i></div></div><div class="sc"><span class="num">${x.score.toFixed(1)}P</span><br><span class="tiny muted">${K("1인당", "per person")}</span></div></div>`).join("");
+  } else if (tab === "crew") {
+    const list = crewRanking(w); top = Math.max(1, ...list.map(x => x.score));
+    rows = list.length ? list.map((x, i) => `<div class="lb ${i === 0 && x.score > 0 ? "r1" : ""} ${m && m.crewId === x.id ? "mine" : ""}">${rankLabel(i)}<div class="nm"><b>${esc(x.name)}${m && m.crewId === x.id ? ` <span class="pill acc">${K("우리", "Mine")}</span>` : ""}</b><span class="small muted">${TRACKS[x.track] ? TRACKS[x.track].code : ""} · ${x.n}${K("명", " people")}</span><div class="bar"><i style="width:${x.score / top * 100}%"></i></div></div><div class="sc"><span class="num">${x.score.toFixed(1)}P</span><br><span class="tiny muted">${K("1인당", "per person")}</span></div></div>`).join("") : `<p class="muted">${K("크루가 공개되면 랭킹이 나타나요.", "Rankings appear once crews are revealed.")}</p>`;
+  } else {
+    const list = indivRanking(w).filter(x => !x.m.hideRank || (m && x.m.code === m.code)); top = Math.max(1, ...list.map(x => x.score));
+    const myI = m ? list.findIndex(x => x.m.code === m.code) : -1;
+    let shown = list.slice(0, 20).map((x, i) => [x, i]); if (myI >= 20) shown.push([list[myI], myI]);
+    rows = shown.length ? shown.map(([x, i]) => `<div class="lb ${i === 0 && x.score > 0 ? "r1" : ""} ${m && x.m.code === m.code ? "mine" : ""}">${rankLabel(i)}<div class="nm"><b>${esc(x.m.nickname)}${m && x.m.code === m.code ? ` <span class="pill acc">ME</span>` : ""}</b><span class="small muted">${esc(x.m.school)} · ${L(TRACKS[x.m.track || x.m.main])}</span><div class="bar"><i style="width:${x.score / top * 100}%"></i></div></div><div class="sc"><span class="num">${fmt(x.score)}P</span></div></div>`).join("") : `<p class="muted">${K("아직 인증이 없어요.", "No check-ins yet.")}</p>`;
+  }
+  return `<div class="wrap stack-lg">
+    <div class="stack"><span class="eyebrow">${phaseLabel()}</span><h1 class="display" style="font-size:2rem">${K("랭킹", "Rankings")}</h1>
+      <p class="small muted">${K("대학·크루는 1인당 평균 포인트 · 개인은 닉네임으로만 공개 · 상한(하루 ", "Universities and crews: average points per person · individuals by nickname only · caps (")}${c.dayCap}P/${K("주 ", "week ")}${c.weekCap}P${K(") 적용", ") applied")}</p></div>
+    <div class="tabs" role="group" aria-label="${K("기간", "Period")}">${Array.from({ length: c.weeks }, (_, i) => `<button data-act="rank-w" data-v="${i + 1}" aria-pressed="${w === i + 1}">W${i + 1}${i + 1 === w0 ? K(" (이번 주)", " (now)") : ""}</button>`).join("")}<button data-act="rank-w" data-v="all" aria-pressed="${w === null}">${K("누적", "All time")}</button></div>
+    <div class="tabs" role="group" aria-label="${K("구분", "Category")}">${[["school", K("대학", "Universities")], ["crew", K("크루", "Crews")], ["indiv", K("개인 (닉네임)", "Individuals (nicknames)")]].map(([k, l]) => `<button data-act="rank-tab" data-v="${k}" aria-pressed="${tab === k}">${l}</button>`).join("")}</div>
+    <section class="card"><div class="board">${rows}</div></section>
+    ${m && isActive(m) ? `<div class="row"><button class="btn" data-act="story-rank">${K("내 랭크 스토리 이미지", "My rank story image")}</button>${m.hideRank ? `<span class="small muted">${K("개인 랭킹에서 내 닉네임은 숨김 상태예요 (내 정보에서 변경)", "Your nickname is hidden from individual rankings (change in profile)")}</span>` : ""}</div>` : ""}
+  </div>`;
+}
+
+/* ---------- 교환 (Tip Exchange · Crew Exchange) ---------- */
+function viewEx() {
+  const m = me(), c = cfg(), w = curWeek();
+  const tips = Object.entries(S.tips).sort((a, b) => b[1].createdAt - a[1].createdAt);
+  const myCrewTip = m && m.crewId ? tips.find(([, x]) => x.crewId === m.crewId) : null;
+  const canPost = m && isActive(m) && (w >= 2 || S.admin) && !myCrewTip;
+  const d = S.draft;
+  return `<div class="wrap stack-lg">
+    <div class="stack"><span class="eyebrow">Green Exchange</span><h1 class="display" style="font-size:2rem">Tip Exchange</h1><p class="muted">${K("크루마다 실천 팁을 카드 한 장으로 만들어 다른 크루와 바꿔요. (W2부터)", "Each crew makes one tip card to swap with other crews. (From week 2)")}</p></div>
+    ${canPost ? `<form class="card stack" id="tipForm" novalidate><b>${K("우리 크루 팁 카드 만들기", "Make our crew's tip card")}</b>
+      <label class="f">${K("제목", "Title")}<input type="text" name="ttitle" maxlength="40" value="${esc(d.ttitle || "")}"></label>
+      <label class="f">${K("팁 내용", "Tip")}<textarea name="ttext" maxlength="500">${esc(d.ttext || "")}</textarea></label>
+      <label class="f">${K("카드 이미지 (선택)", "Card image (optional)")}<input type="file" id="t_file" accept="image/*"></label>
+      ${d.tphoto ? `<img class="preview" src="${d.tphoto}" alt="${K("팁 카드 이미지 미리보기", "Tip card image preview")}">` : ""}
+      <div><button class="btn primary" type="submit">${K("올리기", "Post")}</button></div></form>`
+      : m && isActive(m) && w < 2 && !S.admin ? `<div class="notice">${K(`Tip Exchange는 W2(${mmdd(addDays(pilotStart(), 7))})부터 열려요.`, `Tip Exchange opens in week 2 (${mmdd(addDays(pilotStart(), 7))}).`)}</div>` : ""}
+    ${tips.length ? `<div class="grid2">${tips.map(([id, x]) => {
+      const crew = S.crews[x.crewId], liked = m && (x.likes || []).includes(m.code);
+      const canDel = (m && (x.code === m.code)) || S.admin;
+      return `<article class="card stack">${x.hasPhoto ? `<img class="ph" data-photo="tip_${esc(id)}" alt="${esc(x.title || "Tip card")}" style="width:100%;border-radius:var(--rs);aspect-ratio:4/3;object-fit:cover;background:var(--surface2)">` : ""}
+        <div class="row"><span class="pill acc">${crew ? esc(crew.name) : ""}</span>${crew && TRACKS[crew.track] ? `<span class="pill">${TRACKS[crew.track].code}</span>` : ""}</div>
+        <b>${esc(x.title || "")}</b><p class="small" style="white-space:pre-wrap">${esc(x.text)}</p>
+        <div class="row"><button class="btn sm ${liked ? "primary" : ""}" data-act="like" data-v="${esc(id)}" aria-pressed="${!!liked}" ${m ? "" : "disabled"}>♥ ${(x.likes || []).length}</button>${canDel ? `<button class="btn sm ghost" data-act="del-tip" data-v="${esc(id)}">${K("삭제", "Delete")}</button>` : ""}</div></article>`;
+    }).join("")}</div>` : `<p class="muted">${K("아직 올라온 팁 카드가 없어요.", "No tip cards yet.")}</p>`}
+    <section class="card stack"><span class="eyebrow">WEEK 3</span><h2>Crew Exchange</h2>
+      <p class="small muted">${K("3주차에는 크루를 넘어 개인적으로 교류해요. 결과 카드나 내 랭크를 인스타 스토리에 공유하고, 마지막 주에 공식 계정에서 그린챔피언을 소개해요.", "In week 3, connect beyond your crew. Share your result card or rank on your Instagram story; Green Champions are featured on our official account in the final week.")}</p>
+      <div class="row"><button class="btn" data-act="story-result" ${S.test.result || (m && m.main) ? "" : "disabled"}>${K("결과 카드 스토리", "Result story")}</button>${m && isActive(m) ? `<button class="btn" data-act="story-rank">${K("내 랭크 스토리", "Rank story")}</button>` : ""}</div>
+    </section>
+  </div>`;
+}
+
+/* ---------- 내 정보 ---------- */
+function viewMe() {
+  const m = me(); if (!m) return viewLogin();
+  const d = S.draft;
+  return `<form class="wrap narrow stack-lg" id="meForm" novalidate>
+    <h1 class="display" style="font-size:2rem">${K("내 정보", "My profile")}</h1>
+    <div class="card stack"><span class="small muted">${K("참가자 코드", "Participant code")}</span><span class="codebox" style="font-size:1.5rem">${esc(m.code)}</span>
+      <span class="small">${L(TRACKS[m.main])} · ${K("찰떡 크루", "Best match")}: ${L(TRACKS[m.sub])} · ${L(LEVELS[m.level] || LEVELS.sprout)}</span></div>
+    <label class="f">${K("닉네임", "Nickname")}<input type="text" name="pnick" maxlength="14" value="${esc(d.pnick ?? m.nickname)}"></label>
+    <label class="opt"><input type="checkbox" name="phide" ${(d.phide ?? m.hideRank) ? "checked" : ""}><span class="small">${K("개인 랭킹에서 내 닉네임 숨기기 (크루·대학 점수에는 그대로 반영)", "Hide my nickname from individual rankings (still counts for crew and university)")}</span></label>
+    <label class="opt"><input type="checkbox" name="pmob" ${(d.pmob ?? m.mobility) ? "checked" : ""}><span class="small">${K("이동이 어려워요 (대체 미션 열기)", "Moving around is hard (show alternative missions)")}</span></label>
+    <label class="opt"><input type="checkbox" name="pphoto" ${(d.pphoto ?? m.photoHard) ? "checked" : ""}><span class="small">${K("사진 찍기가 어려워요 (버디 한도 상향·글 인증)", "Taking photos is hard (more buddy checks, text check-ins)")}</span></label>
+    <p class="hint">${K("실명·연락처 변경은 운영진에게 카카오톡으로 알려 주세요.", "To change your name or contact, message the organizers.")}</p>
+    <div class="row"><button class="btn primary" type="submit">${K("저장", "Save")}</button><button class="btn ghost" type="button" data-act="logout">${K("로그아웃", "Log out")}</button></div>
+  </form>`;
+}
+
+/* ---------- 설문 (성찰일지 · 중간 체크인 · 사후 T1) ---------- */
+function viewSurvey(kind) {
+  const m = me(); if (!m) return viewLogin();
+  const [k, w] = kind.split("-");
+  const d = S.draft;
+  const likert = (name, label, lo, hi) => `<fieldset><legend>${label}</legend><div class="chips">${[1, 2, 3, 4, 5].map(v => `<button type="button" class="chip sq" data-act="sset" data-k="${name}" data-v="${v}" aria-pressed="${d[name] === v}">${v}</button>`).join("")}</div><p class="hint">${lo} – ${hi}</p></fieldset>`;
+  let body = "", title = "";
+  if (k === "ref") {
+    title = K(`W${w} 성찰일지`, `Week ${w} reflection`);
+    body = [["q1", K("이번 주 가장 쉽게 붙은 GREEN 행동은?", "Which green action stuck most easily this week?")], ["q2", K("번거롭거나 막혔던 순간은?", "When did it feel like a hassle or get stuck?")], ["q3", K("다음 주에 바꿔 볼 한 가지는?", "One thing you'll change next week?")]]
+      .map(([n, l]) => `<label class="f">${l}<textarea name="${n}" maxlength="400">${esc(d[n] || "")}</textarea></label>`).join("");
+  } else if (k === "mid") {
+    title = K("1분 중간 체크인", "1-minute mid check-in");
+    body = likert("burden", K("인증이 얼마나 번거로웠나요?", "How much of a hassle were check-ins?"), K("1 전혀", "1 not at all"), K("5 매우", "5 very much"))
+      + `<fieldset><legend>${K("순위는 어떻게 느껴졌나요?", "How did the rankings feel?")}</legend><div class="chips">${[["motive", "동기가 됐어요", "Motivating"], ["none", "상관없어요", "Neutral"], ["burden", "부담됐어요", "Stressful"]].map(([v, ko, en]) => `<button type="button" class="chip" data-act="sset" data-k="rankFeel" data-v="${v}" aria-pressed="${d.rankFeel === v}">${K(ko, en)}</button>`).join("")}</div></fieldset>`
+      + `<label class="f">${K("한마디 (선택)", "Anything else? (optional)")}<textarea name="comment" maxlength="300">${esc(d.comment || "")}</textarea></label>`;
+  } else {
+    title = K("사후 설문 (T1)", "Post survey (T1)");
+    body = `<p class="small muted">${K("사전 설문과 같은 문항이에요. 파일럿 기간의 지난 7일을 기준으로 답해 주세요.", "Same questions as the baseline. Answer for the last 7 days of the pilot.")}</p>`
+      + `<div class="gridq">${MQ.map(q => `<div class="gq ${d["t1_" + q.id] != null ? "done" : ""}" role="group" aria-label="${esc(L(q))}"><span><span class="num muted tiny">${q.id}</span> ${esc(L(q))}</span><div class="chips">${(q.type === "days" ? [0, 1, 2, 3, 4, 5, 6, 7] : [1, 2, 3, 4, 5]).map(v => `<button type="button" class="chip sq" data-act="sset" data-k="t1_${q.id}" data-v="${v}" aria-pressed="${d["t1_" + q.id] === v}">${v}</button>`).join("")}</div></div>`).join("")}</div>`
+      + likert("r1b", K("처음 받은 그린 유형이 3주 동안의 내 생활과 맞았나요?", "Did your green type fit your life over the 3 weeks?"), K("1 전혀", "1 not at all"), K("5 완전히", "5 completely"))
+      + `<fieldset><legend>${K("순위는 어떻게 느껴졌나요?", "How did the rankings feel?")}</legend><div class="chips">${[["motive", "동기가 됐어요", "Motivating"], ["none", "상관없어요", "Neutral"], ["burden", "부담됐어요", "Stressful"]].map(([v, ko, en]) => `<button type="button" class="chip" data-act="sset" data-k="rankFeel" data-v="${v}" aria-pressed="${d.rankFeel === v}">${K(ko, en)}</button>`).join("")}</div></fieldset>`
+      + likert("sat", K("파일럿 전체 만족도", "Overall satisfaction"), K("1 불만족", "1 unsatisfied"), K("5 매우 만족", "5 very satisfied"))
+      + `<label class="f">${K("가장 좋았던 점 / 바꾸면 좋을 점", "Best part / what to change")}<textarea name="t1comment" maxlength="500">${esc(d.t1comment || "")}</textarea></label>`;
+  }
+  return `<form class="wrap narrow stack-lg" id="surveyForm" data-kind="${esc(kind)}" novalidate>
+    <h1 class="display" style="font-size:1.9rem">${title}</h1>${body}
+    <div class="row"><button class="btn primary" type="submit">${K("제출", "Submit")}</button><button class="btn ghost" type="button" data-go="home">${K("나중에", "Later")}</button></div>
+  </form>`;
+}
+
+/* ---------- 개인정보 안내 ---------- */
+function viewPrivacy() {
+  return `<div class="wrap narrow stack-lg"><h1 class="display" style="font-size:2rem">${K("개인정보 안내", "Privacy")}</h1>
+    <div class="card stack small">
+      <p><b>${K("모으는 정보", "What we collect")}</b> — ${K("닉네임·학교·응답(공개 범위: 닉네임과 점수만), 실명·연락처(운영진만 열람), 인증 사진.", "Nickname, university and answers (only nickname and points are public); real name and contact (organizers only); check-in photos.")}</p>
+      <p><b>${K("쓰는 곳", "Why")}</b> — ${K("크루 배정, 카카오톡 안내, 리워드 지급, 캠페인 효과 분석(익명).", "Crew placement, KakaoTalk notices, rewards, anonymous campaign analysis.")}</p>
+      <p><b>${K("보관 기간", "How long")}</b> — ${K("파일럿 종료 후 결과 분석이 끝나면 실명·연락처·사진을 파기해요. [보관 기간 확정 필요]", "Name, contact and photos are deleted after analysis. [Retention period to be confirmed]")}</p>
+      <p><b>${K("위치 정보", "Location")}</b> — ${K("웹사이트는 위치(GPS)를 수집하지 않아요.", "This site does not collect GPS location.")}</p>
+      <p><b>${K("문의", "Contact")}</b> — ${K("어차피그린 운영진 (카카오톡 채널 또는 인스타그램)", "Anyway Green organizers (KakaoTalk or Instagram)")}</p>
+    </div></div>`;
+}
+
+/* =====================================================================
+   10. 운영자 화면
+   ===================================================================== */
+function viewAdmin() {
+  if (!S.admin) {
+    return `<form class="wrap narrow stack-lg" id="adminLogin" novalidate style="max-width:460px">
+      <h1 class="display" style="font-size:2rem">${K("운영진 로그인", "Organizer login")}</h1>
+      ${modeNotice()}
+      ${S.adminSetup ? `<div class="notice">${K("처음이에요. 운영자 비밀번호를 정해 주세요 (로컬 모드 전용).", "First time here. Set an organizer password (local mode only).")}</div>` : ""}
+      <label class="f">${K("운영자 비밀번호", "Organizer password")}<input type="password" name="apw" autocomplete="current-password"></label>
+      <div><button class="btn primary" type="submit">${S.adminSetup ? K("비밀번호 설정", "Set password") : K("들어가기", "Enter")}</button></div>
+    </form>`;
+  }
+  const tabs = [["stats", K("현황", "Overview")], ["assign", K("신청·배정", "Sign-ups & crews")], ["notify", K("미인증·카톡", "Reminders")], ["review", K("인증 검수", "Review")], ["pay", K("정산", "Rewards")], ["settings", K("설정·내보내기", "Settings & export")]];
+  const body = { stats: adminStats, assign: adminAssign, notify: adminNotify, review: adminReview, pay: adminPay, settings: adminSettings }[S.adminTab] || adminStats;
+  return `<div class="wrap stack-lg">
+    <div class="sec-h"><h1 class="display" style="font-size:2rem">${K("운영자 화면", "Organizer view")}</h1><button class="btn sm ghost" data-act="admin-out">${K("운영자 로그아웃", "Log out")}</button></div>
+    ${modeNotice()}
+    <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" data-act="admin-tab" data-v="${k}" aria-pressed="${S.adminTab === k}" aria-selected="${S.adminTab === k}">${l}</button>`).join("")}</div>
+    ${body()}
+  </div>`;
+}
+function hbars(items) {
+  const max = Math.max(1, ...items.map(x => x[1]));
+  return `<div class="hbars">${items.map(([l, v, extra]) => `<div><span class="small">${esc(l)}</span><span class="b"><i style="width:${v / max * 100}%"></i></span><span class="num small" style="text-align:right">${v}${extra || ""}</span></div>`).join("")}</div>`;
+}
+function adminStats() {
+  const tests = Object.values(S.tests), members = Object.values(S.members), act = activeMembers(), proofs = Object.values(S.proofs);
+  const approved = proofs.filter(p => p.status === "approved");
+  const refs = tests.filter(t => t.ref).length, sharers = new Set(tests.map(t => t.ref).filter(Boolean)).size;
+  const r1s = tests.filter(t => t.r1).map(t => t.r1), r1avg = r1s.length ? (r1s.reduce((a, b) => a + b, 0) / r1s.length) : 0;
+  const comp = act.filter(m => completed(m.code)).length;
+  const lastW = Math.max(1, Math.min(cfg().weeks, curWeek()));
+  const crews = Object.keys(S.crews).filter(id => crewMembers(id).length);
+  const kept = crews.filter(id => crewMembers(id).filter(m => proofs.some(p => p.code === m.code && p.week === lastW && p.status === "approved")).length >= 3).length;
+  const t1s = Object.values(S.t1), rankBurden = [...t1s, ...Object.values(S.checkins)].filter(x => x.rankFeel);
+  const burdenPct = rankBurden.length ? Math.round(rankBurden.filter(x => x.rankFeel === "burden").length / rankBurden.length * 100) : 0;
+  const logs = Object.values(S.notify).sort((a, b) => b.at - a.at);
+  const effect = logs.map(l => proofs.filter(p => (l.targets || []).includes(p.code) && p.createdAt >= l.at && p.createdAt <= l.at + 3 * 3600e3).length);
+  const effAvg = effect.length ? (effect.reduce((a, b) => a + b, 0) / effect.length) : 0;
+  const card = (k, v, sub) => `<div class="card stat"><span class="k">${k}</span><span class="v">${v}</span>${sub ? `<span class="k">${sub}</span>` : ""}</div>`;
+  const methods = ["photo", "capture", "buddy", "text"].map(k => [P2(METHOD_L[k]), approved.filter(p => p.method === k).length]);
+  return `<section class="stack"><div class="sec-h"><h2>${K("산출물 (Output)", "Outputs")}</h2></div><div class="grid3">
+      ${card(K("테스트 완료", "Tests taken"), fmt(tests.length), K(`연구 동의 ${tests.filter(t => t.consent).length}건`, `${tests.filter(t => t.consent).length} consented`))}
+      ${card(K("공유 링크 유입", "Via shared links"), fmt(refs), K(`공유한 사람 ${sharers}명`, `${sharers} sharers`))}
+      ${card(K("신청자", "Sign-ups"), fmt(members.length), K(`활동 ${act.length} · 예비 ${members.filter(m => m.status === "reserve").length}`, `${act.length} active · ${members.filter(m => m.status === "reserve").length} waitlist`))}
+      ${card(K("인정된 인증", "Approved check-ins"), fmt(approved.length))}
+      ${card(K("Tip 카드", "Tip cards"), fmt(Object.keys(S.tips).length))}
+    </div></section>
+    <section class="stack"><div class="sec-h"><h2>${K("판단 기준 (Outcome)", "Decision criteria")}</h2><span class="small muted">${K("기준값은 파일럿 운영안 5장", "Thresholds from the pilot plan §5")}</span></div><div class="grid3">
+      ${card(K("완주율 (기준 60%)", "Completion (60%)"), act.length ? Math.round(comp / act.length * 100) + "%" : "–", `${comp}/${act.length}`)}
+      ${card(K(`크루 유지율 W${lastW} (기준 75%)`, `Crew retention W${lastW} (75%)`), crews.length ? Math.round(kept / crews.length * 100) + "%" : "–", K(`3명 이상 활동 ${kept}/${crews.length}`, `3+ active ${kept}/${crews.length}`))}
+      ${card(K("R1 평균 (기준 3.5)", "R1 average (3.5)"), r1s.length ? r1avg.toFixed(2) : "–", K(`${r1s.length}명 응답`, `${r1s.length} answers`))}
+      ${card(K("순위 부담 응답 (기준 50%)", "Ranking felt stressful (50%)"), rankBurden.length ? burdenPct + "%" : "–", K(`${rankBurden.length}명 응답`, `${rankBurden.length} answers`))}
+      ${card(K("리마인드 후 3시간 인증", "Check-ins within 3h of reminders"), logs.length ? effAvg.toFixed(1) : "–", K(`발송 기록 ${logs.length}회 평균`, `avg of ${logs.length} sends`))}
+    </div></section>
+    <div class="grid2">
+      <section class="card stack"><h2 style="font-size:1.05rem">${K("테스트 결과 Track 분포", "Test results by track")}</h2>${hbars(TORDER.map(k => [L(TRACKS[k]), tests.filter(t => t.main === k).length]))}</section>
+      <section class="card stack"><h2 style="font-size:1.05rem">${K("그린 레벨 분포", "Green level")}</h2>${hbars(["sprout", "stem", "tree"].map(k => [L(LEVELS[k]), tests.filter(t => t.level === k).length]))}</section>
+      <section class="card stack"><h2 style="font-size:1.05rem">${K("학교별 신청", "Sign-ups by university")}</h2>${hbars(cfg().schools.map(s => [s, members.filter(m => m.school === s).length]))}</section>
+      <section class="card stack"><h2 style="font-size:1.05rem">${K("인증 방식별 비율", "Check-in methods")}</h2>${hbars(methods.map(([l, v]) => [l, v, approved.length ? ` (${Math.round(v / approved.length * 100)}%)` : ""]))}</section>
+    </div>`;
+}
+const STATUS_L = { applied: ["신청", "Signed up"], active: ["활동", "Active"], contact: ["연락 중", "Contacting"], replaced: ["교체됨", "Replaced"], reserve: ["예비", "Waitlist"] };
+function adminAssign() {
+  const ms = Object.values(S.members).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  const AV = { wd_day: K("평일낮", "WD day"), wd_eve: K("평일저녁", "WD eve"), we: K("주말", "Wknd") };
+  return `<section class="card stack"><div class="sec-h"><h2>${K("1. 배정용 CSV 내보내기", "1. Export for crew assignment")}</h2><button class="btn sm primary" data-act="export" data-v="assign">${K("CSV 받기", "Download CSV")}</button></div>
+      <p class="small muted">${K("스프레드시트에서 crew_id(예: C1)와 crew_name을 채운 뒤 아래에 다시 올려 주세요. 규칙: 4~5명 · 같은 Track(3명 미만이면 sub로) · 2개교 이상 · 시간대 겹침 · 영어 필요자는 'both'와 · 친구 최대 2명.", "Fill in crew_id (e.g. C1) and crew_name in a spreadsheet, then import below. Rules: 4–5 people · same track (sub if fewer than 3) · 2+ universities · shared hours · 'en' with 'both' · max 2 friends.")}</p></section>
+    <form class="card stack" id="importForm" novalidate><div class="sec-h"><h2>${K("2. 배정 결과 가져오기", "2. Import assignments")}</h2></div>
+      <label class="f">${K("CSV 파일", "CSV file")}<input type="file" id="imp_file" accept=".csv,text/csv"></label>
+      <label class="f">${K("또는 붙여넣기 (code, crew_id, crew_name, track 열 필요 · track은 C/S/W/D, 비우면 첫 멤버의 메인 유형)", "Or paste (needs code, crew_id, crew_name, track columns · track C/S/W/D, blank = first member's main type)")}<textarea name="imp" style="min-height:120px;font-family:monospace">${esc(S.draft.imp || "")}</textarea></label>
+      <div><button class="btn primary" type="submit">${K("배정 적용 (상태 → 활동)", "Apply (status → active)")}</button></div></form>
+    <section class="card stack"><div class="sec-h"><h2>${K("신청자", "Sign-ups")} (${ms.length})</h2></div>
+      <div class="tbl"><table><thead><tr><th>${K("코드", "Code")}</th><th>${K("닉네임", "Nickname")}</th><th>${K("실명", "Name")}</th><th>${K("학교", "Univ.")}</th><th>${K("메인/찰떡", "Main/sub")}</th><th>${K("시간대", "Hours")}</th><th>${K("언어", "Lang")}</th><th>${K("친구", "Friend")}</th><th>UD</th><th>${K("크루", "Crew")}</th><th>${K("상태", "Status")}</th></tr></thead><tbody>
+      ${ms.map(m => `<tr><td class="num">${esc(m.code)}</td><td>${esc(m.nickname)}</td><td>${esc((S.priv[m.code] || {}).realName || "–")}</td><td>${esc(m.school)}</td><td>${m.main}/${m.sub}</td><td>${(m.avail || []).map(a => AV[a] || a).join(",")}</td><td>${esc(m.eng)}</td><td>${esc(m.friend || "")}</td><td>${m.mobility ? K("이동", "Mob") : ""}${m.photoHard ? " " + K("촬영", "Photo") : ""}</td><td>${esc(m.crewId && S.crews[m.crewId] ? S.crews[m.crewId].name : "–")}</td>
+        <td><select data-act="status" data-code="${esc(m.code)}" aria-label="${K("상태", "Status")}">${Object.entries(STATUS_L).map(([k, l]) => `<option value="${k}" ${m.status === k ? "selected" : ""}>${P2(l)}</option>`).join("")}</select></td></tr>`).join("")}
+      </tbody></table></div></section>`;
+}
+function notifyTargets() {
+  const t = today(), w = curWeek(), f = S.notifyFilter;
+  return activeMembers().filter(m => {
+    const mine = Object.values(S.proofs).filter(p => p.code === m.code && ["approved", "pending"].includes(p.status));
+    if (f === "today0") return !mine.some(p => p.day === t);
+    if (f === "week0") return !mine.some(p => p.week === w);
+    if (f === "since0") return !mine.length;
+    return true;
+  });
+}
+function fillTpl(tpl, m) { return String(tpl || "").split("{nick}").join(m ? m.nickname : "").split("{url}").join(shareBase()).split("{w}").join(String(Math.max(1, curWeek()))); }
+function adminNotify() {
+  const c = cfg(), list = notifyTargets(), f = S.notifyFilter;
+  const tplKey = f === "all" ? "tplRank" : f === "today0" ? "tplRemind" : "tplNoCert";
+  const logs = Object.entries(S.notify).sort((a, b) => b[1].at - a[1].at);
+  const proofs = Object.values(S.proofs);
+  return `<section class="card stack">
+      <div class="sec-h"><h2>${K("카카오톡 발송 대상", "KakaoTalk targets")}</h2><span class="pill wait">${list.length}${K("명", "")}</span></div>
+      <div class="tabs" role="group">${[["today0", K("오늘 미인증", "No check-in today")], ["week0", K("이번 주 0건", "None this week")], ["since0", K("시작 후 0건 (교체 검토)", "None since start")], ["all", K("활동 전체 (랭킹 공지)", "All active (ranking)")]].map(([k, l]) => `<button data-act="nfilter" data-v="${k}" aria-pressed="${f === k}">${l}</button>`).join("")}</div>
+      <p class="small muted">${K("1) 메시지 복사 → 2) 카카오톡에 붙여넣어 보내기 → 3) '발송 완료 기록'을 눌러 주세요. 기록 시각이 '리마인드 직후 인증 수' 지표가 돼요.", "1) Copy the message → 2) send on KakaoTalk → 3) press 'Log as sent'. The log time feeds the reminder-effect metric.")}</p>
+      <label class="f">${K("메시지 템플릿 ({nick}·{url}·{w} 자동 치환)", "Template ({nick}, {url}, {w} are filled in)")}<textarea name="tpl_${tplKey}" data-cfg="${tplKey}">${esc(S.draft["tpl_" + tplKey] ?? c[tplKey])}</textarea></label>
+      <div class="tbl"><table><thead><tr><th>${K("닉네임", "Nickname")}</th><th>${K("실명", "Name")}</th><th>${K("연락처", "Contact")}</th><th>${K("크루", "Crew")}</th><th></th></tr></thead><tbody>
+        ${list.map(m => `<tr><td>${esc(m.nickname)}</td><td>${esc((S.priv[m.code] || {}).realName || "–")}</td><td>${esc((S.priv[m.code] || {}).contact || "–")}</td><td>${esc(S.crews[m.crewId] ? S.crews[m.crewId].name : "")}</td><td><button class="btn sm" data-act="copy-msg" data-v="${esc(m.code)}" data-t="${tplKey}">${K("메시지 복사", "Copy")}</button></td></tr>`).join("") || `<tr><td colspan="5" class="muted">${K("대상이 없어요.", "Nobody to message.")}</td></tr>`}
+      </tbody></table></div>
+      <div class="row"><button class="btn primary" data-act="log-send" data-t="${tplKey}" ${list.length ? "" : "disabled"}>${K(`발송 완료 기록 (${list.length}명)`, `Log as sent (${list.length})`)}</button><button class="btn sm ghost" data-act="save-tpl" data-t="${tplKey}">${K("템플릿 저장", "Save template")}</button></div>
+    </section>
+    <section class="card stack"><div class="sec-h"><h2>${K("발송 기록", "Send log")}</h2></div>
+      <div class="tbl"><table><thead><tr><th>${K("시각", "Time")}</th><th>${K("종류", "Type")}</th><th class="r">${K("대상", "Targets")}</th><th class="r">${K("3시간 내 인증", "Check-ins ≤3h")}</th></tr></thead><tbody>
+      ${logs.map(([, l]) => `<tr><td>${new Date(l.at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</td><td>${esc(l.type)}</td><td class="r">${(l.targets || []).length}</td><td class="r">${proofs.filter(p => (l.targets || []).includes(p.code) && p.createdAt >= l.at && p.createdAt <= l.at + 3 * 3600e3).length}</td></tr>`).join("") || `<tr><td colspan="4" class="muted">–</td></tr>`}
+      </tbody></table></div></section>`;
+}
+function adminReview() {
+  const ps = Object.entries(S.proofs);
+  const pend = ps.filter(([, p]) => p.status === "pending").sort((a, b) => a[1].createdAt - b[1].createdAt);
+  const flagged = ps.filter(([, p]) => p.exifMismatch && p.status === "approved");
+  const sample = S.sample.map(id => [id, S.proofs[id]]).filter(([, p]) => p);
+  return `<section class="card stack"><div class="sec-h"><h2>${K("무작위 검수", "Random audit")}</h2><button class="btn sm primary" data-act="sample">${K("10건 무작위 뽑기", "Draw 10 at random")}</button></div>
+      <p class="small muted">${K("매주 무작위로 확인하고, 같은 사진 반복 등 부정 인증은 포인트를 취소해요. (같은 파일은 업로드 단계에서 자동 차단)", "Audit weekly; cancel points for fraud. Identical files are blocked at upload.")}</p>
+      ${sample.length ? `<div class="feed">${sample.map(([id, p]) => proofCard(id, p, { admin: true })).join("")}</div>` : ""}</section>
+    <section class="stack"><div class="sec-h"><h2>${K("촬영일이 실천일과 다른 사진", "Photo date differs from action day")}</h2><span class="pill wait">${flagged.length}</span></div>
+      ${flagged.length ? `<div class="feed">${flagged.slice(0, 30).map(([id, p]) => proofCard(id, p, { admin: true })).join("")}</div>` : `<p class="muted small">–</p>`}</section>
+    <section class="stack"><div class="sec-h"><h2>${K("버디 확인 대기", "Waiting for buddy")}</h2><span class="pill wait">${pend.length}</span></div>
+      ${pend.length ? `<div class="feed">${pend.slice(0, 30).map(([id, p]) => proofCard(id, p, { admin: true })).join("")}</div>` : `<p class="muted small">–</p>`}</section>`;
+}
+function adminPay() {
+  const c = cfg(), act = activeMembers().sort((a, b) => pts(b.code) - pts(a.code));
+  const top3 = indivRanking(null).slice(0, 3);
+  const total = act.reduce((a, m) => a + reward(m.code), 0);
+  return `<section class="card stack"><div class="sec-h"><h2>${K("상위 3명 (상품권 개별 안내)", "Top 3 (gift cards)")}</h2></div>
+      <div class="tbl"><table><thead><tr><th>${K("순위", "Rank")}</th><th>${K("닉네임", "Nickname")}</th><th>${K("실명", "Name")}</th><th>${K("연락처", "Contact")}</th><th class="r">P</th></tr></thead><tbody>
+      ${top3.map((x, i) => `<tr><td>${i + 1}${K("위", "")}</td><td>${esc(x.m.nickname)}</td><td>${esc((S.priv[x.m.code] || {}).realName || "–")}</td><td>${esc((S.priv[x.m.code] || {}).contact || "–")}</td><td class="r">${fmt(x.score)}</td></tr>`).join("")}
+      </tbody></table></div></section>
+    <section class="card stack"><div class="sec-h"><h2>${K("완주 기프티콘", "Completion vouchers")}</h2><span class="small muted">${K(`완주 기준 평일 ${c.completeDays}일 · 지급 예정 합계 ₩${fmt(total)}`, `Finish = ${c.completeDays} weekdays · total ₩${fmt(total)}`)}</span><button class="btn sm" data-act="export" data-v="pay">${K("CSV 받기", "Download CSV")}</button></div>
+      <div class="tbl"><table><thead><tr><th>${K("닉네임", "Nickname")}</th><th>${K("실명", "Name")}</th><th>${K("연락처", "Contact")}</th><th class="r">${K("평일 인증일", "Weekdays")}</th><th class="r">P</th><th>${K("완주", "Finished")}</th><th class="r">₩</th><th></th></tr></thead><tbody>
+      ${act.map(m => { const po = S.payouts[m.code], done = completed(m.code);
+        return `<tr><td>${esc(m.nickname)}</td><td>${esc((S.priv[m.code] || {}).realName || "–")}</td><td>${esc((S.priv[m.code] || {}).contact || "–")}</td><td class="r">${U(m.code).wd.size}</td><td class="r">${fmt(pts(m.code))}</td><td>${done ? `<span class="pill ok">${K("완주", "Yes")}</span>` : `<span class="pill">${K("미완주", "No")}</span>`}</td><td class="r">${fmt(reward(m.code))}</td>
+        <td>${po && po.paid ? `<span class="pill ok">${K("지급 완료", "Paid")}</span>` : `<button class="btn sm" data-act="mark-paid" data-v="${esc(m.code)}" ${done ? "" : "disabled"}>${K("지급 처리", "Mark paid")}</button>`}</td></tr>`; }).join("")}
+      </tbody></table></div><p class="hint">${K("포인트·지급액은 파일럿 검증용 가정값이에요.", "Points and payouts are assumptions for the pilot.")}</p></section>`;
+}
+function adminSettings() {
+  const c = cfg();
+  const num = (n, l) => `<label class="f">${l}<input type="number" name="${n}" value="${c[n]}" min="0"></label>`;
+  const date = (n, l) => `<label class="f">${l}<input type="date" name="${n}" value="${esc(c[n])}"></label>`;
+  return `<form class="card stack" id="cfgForm" novalidate><div class="sec-h"><h2>${K("캠페인 설정", "Campaign settings")}</h2></div>
+      <div class="grid3">${date("startDate", K("파일럿 시작일 (월)", "Pilot start (Mon)"))}${num("weeks", K("운영 주차", "Weeks"))}${date("deadline", K("인증 마감일", "Check-in deadline"))}${date("applyDeadline", K("모집 마감일", "Sign-up deadline"))}${date("crewReveal", K("크루 공개일", "Crew reveal"))}</div>
+      <div class="grid3">${num("dayCap", K("하루 상한 P", "Daily cap"))}${num("weekCap", K("주간 상한 P", "Weekly cap"))}${num("completeDays", K("완주 평일 수", "Weekdays to finish"))}${num("buddyPerWeek", K("버디 주 한도", "Buddy/week"))}${num("buddyPerWeekUD", K("버디 한도 (촬영 어려움)", "Buddy/week (photo-hard)"))}${num("wonPerPoint", K("1P당 원", "₩ per point"))}</div>
+      <label class="f">${K("참여 학교 (줄마다 1개)", "Universities (one per line)")}<textarea name="schools">${esc(c.schools.join("\n"))}</textarea></label>
+      <div class="grid2"><label class="f">${K("공지 (한국어)", "Announcement (Korean)")}<textarea name="annKo">${esc(c.annKo)}</textarea></label><label class="f">${K("공지 (영어)", "Announcement (English)")}<textarea name="annEn">${esc(c.annEn)}</textarea></label></div>
+      <div><button class="btn primary" type="submit">${K("저장", "Save")}</button></div></form>
+    <section class="card stack"><div class="sec-h"><h2>${K("데이터 내보내기 (CSV)", "Export data (CSV)")}</h2></div>
+      <div class="row">${[["members", K("참가자", "Participants")], ["tests", K("테스트·T0", "Tests & T0")], ["proofs", K("인증", "Check-ins")], ["reflections", K("성찰일지", "Reflections")], ["checkins", K("중간 체크인", "Mid check-ins")], ["t1", K("사후 T1", "Post T1")], ["tips", "Tip Exchange"], ["notify", K("발송 기록", "Send log")]].map(([k, l]) => `<button class="btn sm" data-act="export" data-v="${k}">${l}</button>`).join("")}</div>
+      <p class="hint">${K("T0·T1은 같은 참가자 코드로 연결돼요. 개인정보(실명·연락처)는 '참가자' CSV에만 들어가요.", "T0 and T1 link by participant code. Names and contacts appear only in the participants CSV.")}</p></section>`;
+}
+
+/* =====================================================================
+   11. 렌더
+   ===================================================================== */
+let pendingRender = false, lastRoute = null;
+function render(force) {
+  const view = $("#view"), ae = document.activeElement;
+  if (!force && ae && view.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && !["radio", "checkbox", "file"].includes(ae.type)) { pendingRender = true; return; }
+  pendingRender = false; LEDGER = null;
+  renderHeader();
+  const r = S.route;
+  const html = r === "test" ? viewTest() : r === "apply" ? viewApply() : r === "applied" ? viewApplied() : r === "login" ? viewLogin()
+    : r === "mission" ? viewMission() : r === "crew" ? viewCrew() : r === "rank" ? viewRank() : r === "ex" ? viewEx()
+    : r === "me" ? viewMe() : r.startsWith("survey/") ? viewSurvey(r.slice(7)) : r === "privacy" ? viewPrivacy()
+    : r === "admin" ? viewAdmin() : viewHome();
+  view.innerHTML = html;
+  if (r !== lastRoute) { lastRoute = r; view.classList.add("enter"); setTimeout(() => view.classList.remove("enter"), 900); }
+  hydratePhotos();
+}
+document.addEventListener("focusout", () => setTimeout(() => { if (pendingRender) render(); }, 0));
+function go(r) {
+  S.route = r;
+  /* 미리보기·샌드박스 화면에서는 주소 변경이 막혀 있으므로 실패해도 화면 전환은 계속 */
+  if (location.hash !== "#/" + r) { try { history.pushState(null, "", "#/" + r); } catch (e) {} }
+  render(true); window.scrollTo(0, 0); $("#view").focus({ preventScroll: true });
+}
+const syncRoute = () => { const r = location.hash.replace(/^#\/?/, "") || "home"; if (r !== S.route) { S.route = r; render(true); window.scrollTo(0, 0); } };
+window.addEventListener("popstate", syncRoute);
+window.addEventListener("hashchange", syncRoute);
+
+const photoCache = new Map();
+function hydratePhotos() {
+  for (const img of $$("img[data-photo]")) {
+    const id = img.dataset.photo;
+    if (photoCache.has(id)) { const v = photoCache.get(id); if (v) img.src = v; continue; }
+    if (!S.db) continue;
+    photoCache.set(id, null);
+    S.db.doc("photos/" + id).get().then(s => {
+      const v = s.exists ? (s.data() || {}).data : null; photoCache.set(id, v);
+      $$(`img[data-photo="${CSS.escape(id)}"]`).forEach(el => { if (v) el.src = v; });
+    }).catch(() => photoCache.delete(id));
+  }
+}
+
+/* =====================================================================
+   12. 동작
+   ===================================================================== */
+function setPath(obj, path, val) { const ks = path.split("."); let o = obj; for (let i = 0; i < ks.length - 1; i++) o = o[ks[i]] = o[ks[i]] || {}; o[ks[ks.length - 1]] = val; }
+
+async function finishTest() {
+  const st = S.test;
+  S.busy = true; render(true);
+  const r = greenResult(st.t, st.a6);
+  st.result = r; st.testId = st.testId || rid(10);
+  const rec = st.consent
+    ? { at: Date.now(), lang, ref: refCode(), consent: true, base: st.base, t: st.t, a6: st.a6, m: st.m, p: st.p, main: r.main, sub: r.sub, level: r.level, n: r.n, score: r.score }
+    : { at: Date.now(), ref: refCode(), consent: false, main: r.main, level: r.level };
+  if (S.db) await write(db => db.doc("tests/" + st.testId).set(rec));
+  st.i = STEPS.length - 1; S.busy = false; saveTest(); render(true); window.scrollTo(0, 0);
+}
+async function shareResult() {
+  const r = S.test.result || (me() ? { main: me().main } : null);
+  const code = me() ? me().code : S.test.testId || "";
+  const url = shareBase() + (code ? "?ref=" + encodeURIComponent(code) : "") + "#/test";
+  const text = r ? K(`나는 '${TRACKS[r.main].ko}'! 어차피 하는 거, 그린하게. 너의 그린 유형은? #어차피그린`, `I'm a '${TRACKS[r.main].en}'! Doing it anyway? Do it green. What's your green type? #AnywayGreen`) : K("어차피 하는 거, 그린하게. #어차피그린", "Doing it anyway? Do it green. #AnywayGreen");
+  if (navigator.share) { try { await navigator.share({ title: "Anyway Green", text, url }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+  copyText(text + " " + url);
+}
+function storyResult() {
+  const m = me(), r = S.test.result || (m ? { main: m.main, sub: m.sub, level: m.level || "sprout", already: [] } : null);
+  if (!r) return;
+  const already = (r.already || []).map(id => L(A6_ROWS.find(x => x.id === id))).filter(Boolean);
+  storyImage([
+    { t: K("나의 그린 유형", "My green type"), s: 40, w: 500, color: "#97A79E", gap: 8 },
+    { t: `${L(LEVELS[r.level])} · ${TRACKS[r.main].code}`, s: 44, w: 800, color: "#2BD4A4", f: "d", gap: 18 },
+    { t: L(TRACKS[r.main]), s: 108, w: 900, gap: 30 },
+    { t: lang === "en" ? TRACKS[r.main].den : TRACKS[r.main].dko, s: 40, w: 500, color: "#C9D4CE", gap: 50 },
+    { t: `${K("찰떡 크루", "Best-match crew")}: ${L(TRACKS[r.sub])}`, s: 44, w: 700, color: "#2BD4A4", gap: 20 },
+    ...(already.length ? [{ t: `${K("이미 하는 중", "Already doing")}: ${already.join(", ")}`, s: 36, w: 500, color: "#97A79E" }] : [])
+  ], K(`나의 그린 유형: ${TRACKS[r.main].ko}`, `My green type: ${TRACKS[r.main].en}`));
+}
+function storyRank() {
+  const m = me(); if (!m) return;
+  const crews = crewRanking(null), ci = crews.findIndex(x => x.id === m.crewId);
+  const sch = schoolRanking(null), si = sch.findIndex(x => x.s === m.school);
+  const ind = indivRanking(null), ii = ind.findIndex(x => x.m.code === m.code);
+  storyImage([
+    { t: K("나의 그린 랭크", "My green rank"), s: 40, w: 500, color: "#97A79E", gap: 10 },
+    { t: m.nickname, s: 96, w: 900, gap: 30 },
+    { t: `${fmt(pts(m.code))}P`, s: 120, w: 800, color: "#2BD4A4", f: "d", gap: 40 },
+    { t: `${K("크루", "Crew")} ${S.crews[m.crewId] ? S.crews[m.crewId].name : ""} · ${ci >= 0 ? K(`${ci + 1}위`, `#${ci + 1}`) : "–"}`, s: 42, w: 700, gap: 14 },
+    { t: `${m.school} · ${si >= 0 ? K(`${si + 1}위`, `#${si + 1}`) : "–"}`, s: 40, w: 500, color: "#C9D4CE", gap: 14 },
+    ...(!m.hideRank && ii >= 0 ? [{ t: K(`개인 ${ii + 1}위`, `Individual #${ii + 1}`), s: 40, w: 500, color: "#C9D4CE" }] : [])
+  ], K("나의 그린 랭크", "My green rank"));
+}
+
+document.addEventListener("click", async e => {
+  const g = e.target.closest("[data-go]");
+  if (g) { e.preventDefault(); go(g.dataset.go); return; }
+  const a = e.target.closest("[data-act]"); if (!a) return;
+  const act = a.dataset.act, v = a.dataset.v, st = S.test, d = S.draft;
+  if (act === "lang") { lang = v; store.set("ag.lang", lang); render(true); }
+  else if (act === "big") { const on = document.documentElement.classList.toggle("big"); store.set("ag.big", on); render(true); }
+  else if (act === "copy") copyText(v);
+  /* 테스트 */
+  else if (act === "consent") { st.consent = a.checked; saveTest(); }
+  else if (act === "t-start") { st.i = 1; saveTest(); render(true); }
+  else if (act === "t-back") { st.i = Math.max(0, st.i - 1); saveTest(); render(true); }
+  else if (act === "t-next") { st.i = Math.min(STEPS.length - 2, st.i + 1); saveTest(); render(true); window.scrollTo(0, 0); }
+  else if (act === "t-ans") { const qi = +STEPS[st.i].slice(1); st.t[qi] = +v; st.i++; saveTest(); render(true); window.scrollTo(0, 0); }
+  else if (act === "tset") {
+    const k = a.dataset.k; const val = k === "base.A1" ? v : +v;
+    if (k.startsWith("a6.")) st.a6[k.slice(3)] = val; else if (k.startsWith("m.")) st.m[k.slice(2)] = val; else setPath(st, k, val);
+    saveTest(); render(true);
+  }
+  else if (act === "a7") { const i = +v, arr = st.p.A7 || (st.p.A7 = []); const j = arr.indexOf(i); if (j >= 0) arr.splice(j, 1); else arr.push(i); saveTest(); render(true); }
+  else if (act === "t-finish") { await finishTest(); }
+  else if (act === "r1") { st.r1 = +v; saveTest(); render(true); if (st.testId && S.tests[st.testId]) write(db => db.doc("tests/" + st.testId).update({ r1: +v })); }
+  else if (act === "retake") { S.test = newTest(); saveTest(); render(true); }
+  else if (act === "share-result") shareResult();
+  else if (act === "story-result") storyResult();
+  else if (act === "story-rank") storyRank();
+  /* 신청 */
+  else if (act === "avail") { const arr = d.avail || (d.avail = []); const j = arr.indexOf(v); if (j >= 0) arr.splice(j, 1); else arr.push(v); render(true); }
+  /* 미션 */
+  else if (act === "pickday") { d.day = v; d.mission = null; render(true); }
+  else if (act === "pick-mission") { d.mission = v; d.bonus = a.dataset.b === "1"; render(true); $("#proofForm") && $("#proofForm").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" }); }
+  else if (act === "buddy-ok" || act === "buddy-no") {
+    const p = S.proofs[v]; if (!p || !me() || p.buddy !== me().code) return;
+    await write(db => db.doc("proofs/" + v).update({ status: act === "buddy-ok" ? "approved" : "rejected", reviewedAt: Date.now() }));
+  }
+  /* 랭킹 */
+  else if (act === "rank-w") { S.rankW = v === "all" ? null : +v; S.rankWSet = true; render(true); }
+  else if (act === "rank-tab") { S.rankTab = v; render(true); }
+  /* 교환 */
+  else if (act === "like") {
+    const x = S.tips[v], m = me(); if (!x || !m) return;
+    const likes = (x.likes || []).includes(m.code) ? x.likes.filter(i => i !== m.code) : [...(x.likes || []), m.code];
+    await write(db => db.doc("tips/" + v).update({ likes }));
+  }
+  else if (act === "del-tip") { if (confirm(K("이 팁 카드를 삭제할까요?", "Delete this tip card?"))) await write(db => db.doc("tips/" + v).delete()); }
+  /* 설문 */
+  else if (act === "sset") { d[a.dataset.k] = isNaN(+v) ? v : +v; render(true); }
+  /* 내 정보 */
+  else if (act === "logout") { store.del("ag.session"); S.me = null; S.draft = {}; toast(K("로그아웃했어요", "Logged out")); go("home"); }
+  /* 운영 */
+  else if (act === "admin-tab") { S.adminTab = v; render(true); }
+  else if (act === "admin-out") { S.admin = false; S.adminPw = null; S.priv = {}; go("home"); }
+  else if (act === "nfilter") { S.notifyFilter = v; render(true); }
+  else if (act === "copy-msg") { const tk = a.dataset.t; copyText(fillTpl(S.draft["tpl_" + tk] ?? cfg()[tk], S.members[v])); }
+  else if (act === "save-tpl") { const tk = a.dataset.t; const val = S.draft["tpl_" + tk] ?? cfg()[tk]; if (await write(db => db.doc("config/campaign").set({ ...cfg(), [tk]: val }))) toast(K("저장했어요", "Saved")); }
+  else if (act === "log-send") {
+    const targets = notifyTargets().map(m => m.code);
+    if (await write(db => db.collection("notify").doc().set({ at: Date.now(), type: a.dataset.t, filter: S.notifyFilter, targets }))) toast(K(`${targets.length}명 발송 기록 완료`, `Logged ${targets.length} sends`));
+  }
+  else if (act === "sample") {
+    const pool = Object.entries(S.proofs).filter(([, p]) => p.status === "approved" && p.method !== "buddy").map(([id]) => id);
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    S.sample = pool.slice(0, 10); render(true);
+  }
+  else if (act === "cancel-proof") { const reason = prompt(K("취소 사유 (참가자에게 보여요)", "Reason (shown to the participant)"), K("인증 기준 미충족", "Doesn't meet the check-in rules")); if (reason !== null) await write(db => db.doc("proofs/" + v).update({ status: "cancelled", reason, reviewedAt: Date.now() })); }
+  else if (act === "restore-proof") await write(db => db.doc("proofs/" + v).update({ status: "approved", reason: "" }));
+  else if (act === "approve-proof") await write(db => db.doc("proofs/" + v).update({ status: "approved", reviewedAt: Date.now(), byAdmin: true }));
+  else if (act === "mark-paid") await write(db => db.doc("payouts/" + v).set({ paid: true, amount: reward(v), at: Date.now() }));
+  else if (act === "export") exportCSV(v);
+});
+
+document.addEventListener("input", e => {
+  const el = e.target;
+  if (el.dataset && el.dataset.test) { setPath(S.test, el.dataset.test, el.value); saveTest(); return; }
+  if (!el.name || el.type === "radio" || el.type === "file") return;
+  S.draft[el.name] = el.type === "checkbox" ? el.checked : el.value;
+});
+document.addEventListener("change", async e => {
+  const el = e.target, d = S.draft;
+  if (el.type === "radio" && el.name === "method") { d.method = el.value; render(true); return; }
+  if (el.type === "checkbox" && el.name) { d[el.name] = el.checked; return; }
+  if (el.tagName === "SELECT" && el.name) { d[el.name] = el.value; return; }
+  if (el.dataset && el.dataset.act === "status") { const code = el.dataset.code; await write(db => db.doc("members/" + code).update({ status: el.value })); return; }
+  if (el.id === "p_file" && el.files && el.files[0]) {
+    const f = el.files[0];
+    try {
+      const [photo, hash, shot] = await Promise.all([compressImage(f), f.arrayBuffer().then(b => sha256(b)), readShotTime(f)]);
+      d.photo = photo; d.hash = hash; d.shotAt = shot;
+      d.shotNote = shot ? K(`촬영 시각: ${new Date(shot).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}`, `Taken: ${new Date(shot).toLocaleString("en-US", { timeZone: "Asia/Seoul" })}`) : K("촬영 시각 정보가 없는 이미지예요 (캡처·편집 이미지는 정상).", "No timestamp found (normal for screenshots or edited images).");
+    } catch (err) { toast(K("이미지를 읽지 못했어요", "Couldn't read the image")); }
+    render(true); return;
+  }
+  if (el.id === "t_file" && el.files && el.files[0]) { try { d.tphoto = await compressImage(el.files[0], 1000); } catch (err) { toast(K("이미지를 읽지 못했어요", "Couldn't read the image")); } render(true); return; }
+  if (el.id === "imp_file" && el.files && el.files[0]) { d.imp = await el.files[0].text(); render(true); }
+});
+
+document.addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = e.target;
+  if (f.id === "applyForm") await doApply(f);
+  else if (f.id === "loginForm") await doLogin(f);
+  else if (f.id === "proofForm") await doProof();
+  else if (f.id === "tipForm") await doTip();
+  else if (f.id === "meForm") await doMe(f);
+  else if (f.id === "surveyForm") await doSurvey(f.dataset.kind);
+  else if (f.id === "adminLogin") await doAdminLogin(f);
+  else if (f.id === "importForm") await doImport();
+  else if (f.id === "cfgForm") await doCfg(f);
+});
+
+async function doApply(f) {
+  const d = S.draft, r = S.test.result, el = n => f.elements[n];
+  const nick = (el("nick").value || "").trim(), realName = (el("realName").value || "").trim(), contact = (el("contact").value || "").trim();
+  const school = el("school").value, pin = (el("pin").value || "").trim();
+  if (!r) return toast(K("먼저 그린 테스트를 마쳐 주세요", "Finish the Green Test first"));
+  if (!nick) return toast(K("닉네임을 입력해 주세요", "Enter a nickname"));
+  if (Object.values(S.members).some(m => String(m.nickname).toLowerCase() === nick.toLowerCase())) return toast(K("이미 쓰고 있는 닉네임이에요", "That nickname is taken"));
+  if (!realName || !contact) return toast(K("실명과 연락처를 입력해 주세요 (운영진만 봐요)", "Enter your name and contact (organizers only)"));
+  if (!school) return toast(K("학교를 선택해 주세요", "Choose your university"));
+  if (!(d.avail || []).length) return toast(K("연락 가능한 시간대를 하나 이상 골라 주세요", "Pick at least one time slot"));
+  if (!/^\d{4}$/.test(pin)) return toast(K("PIN은 숫자 4자리예요", "PIN must be 4 digits"));
+  if (!el("agree").checked) return toast(K("필수 동의에 체크해 주세요", "Please tick the required consent"));
+  S.busy = true; render(true);
+  let code = codeGen(); while (S.members[code]) code = codeGen();
+  const status = today() > cfg().applyDeadline ? "reserve" : "applied";
+  const member = { code, nickname: nick.slice(0, 14), school, lang, avail: d.avail, eng: el("eng").value, friend: (el("friend").value || "").trim().toUpperCase().slice(0, 12),
+    mobility: !!el("mobility").checked, photoHard: !!el("photoHard").checked, interview: !!el("interview").checked,
+    main: r.main, sub: r.sub, level: r.level, track: r.main, testId: S.test.testId, ref: refCode(), status, crewId: null, hideRank: false, createdAt: Date.now() };
+  const pinHash = await sha256(code + ":" + pin);
+  let ok = await write(async db => {
+    await API.insertPrivate(code, { realName, contact, pinHash, at: Date.now() });
+    await db.doc("members/" + code).set(member);
+  });
+  if (ok && S.test.testId && S.tests[S.test.testId] && S.tests[S.test.testId].consent) await write(db => db.doc("tests/" + S.test.testId).update({ code }));
+  S.busy = false;
+  if (ok) { S.me = code; store.set("ag.session", code); S.draft = {}; toast(K("신청 완료!", "Signed up!")); go("applied"); } else render(true);
+}
+async function doLogin(f) {
+  const code = (f.elements.lcode.value || "").trim().toUpperCase(), pin = (f.elements.lpin.value || "").trim();
+  if (!S.members[code]) return toast(K("참가자 코드를 확인해 주세요", "Check your participant code"));
+  try {
+    const ok = await API.login(code, await sha256(code + ":" + pin));
+    if (!ok) return toast(K("PIN이 맞지 않아요", "Wrong PIN"));
+    S.me = code; store.set("ag.session", code); S.draft = {}; toast(K("로그인했어요", "Logged in")); go("home");
+  } catch (e) { toast(K("로그인하지 못했어요. 잠시 후 다시 시도해 주세요.", "Couldn't log in. Try again shortly.")); }
+}
+async function doProof() {
+  const d = S.draft, m = me(), c = cfg();
+  if (!m || !isActive(m)) return;
+  const mi = d.mission && MISSION[d.mission];
+  const method = d.method || "photo";
+  if (!mi) return toast(K("미션을 먼저 골라 주세요", "Pick a mission first"));
+  if (!d.day || !canUploadFor(d.day)) return toast(K("인증할 수 있는 날짜가 아니에요", "You can't check in for that day"));
+  const w = weekOfDay(d.day);
+  if (Object.values(S.proofs).some(p => p.code === m.code && p.day === d.day && p.missionId === mi.id && !["rejected", "cancelled"].includes(p.status))) return toast(K("같은 미션은 하루에 한 번만 인증할 수 있어요", "One check-in per mission per day"));
+  if (["photo", "capture"].includes(method) && !d.photo) return toast(K("이미지를 올려 주세요", "Please add an image"));
+  if (method === "text" && !(d.note || "").trim()) return toast(K("무엇을 했는지 적어 주세요", "Describe what you did"));
+  if (method === "text" && !m.photoHard) return;
+  if (["photo", "capture"].includes(method) && Object.values(S.proofs).some(p => p.hash && p.hash === d.hash && p.status !== "cancelled")) return toast(K("이미 올린 적 있는 이미지예요. 새로 찍어 주세요.", "This image was already used. Please take a new one."));
+  let buddy = null;
+  if (method === "buddy") {
+    const lim = m.photoHard ? c.buddyPerWeekUD : c.buddyPerWeek;
+    if (myBuddyUsed(m, w) >= lim) return toast(K("이번 주 버디 인증 횟수를 다 썼어요", "No buddy checks left this week"));
+    buddy = d.buddy || (crewMembers(m.crewId).find(x => x.code !== m.code) || {}).code;
+    if (!buddy) return toast(K("확인해 줄 크루원이 없어요", "No crewmate to confirm"));
+  }
+  const bonus = !!d.bonus && mi.tr === "S" && (m.track || m.main) !== "S" && w >= 3;
+  S.busy = true; render(true);
+  const id = rid(14), hasPhoto = ["photo", "capture"].includes(method);
+  const shotDay = d.shotAt ? kstDay(d.shotAt) : null;
+  const ok = await write(async db => {
+    if (hasPhoto) await db.doc("photos/" + id).set({ data: d.photo, code: m.code, at: Date.now() });
+    await db.doc("proofs/" + id).set({ code: m.code, crewId: m.crewId, school: m.school, missionId: mi.id, tr: mi.tr, lv: mi.lv, points: missionPoints(mi, bonus), bonus,
+      method, day: d.day, week: w, hasPhoto, hash: hasPhoto ? d.hash : null, shotAt: d.shotAt || null, exifMismatch: !!(shotDay && shotDay !== d.day),
+      buddy, note: (d.note || "").trim().slice(0, 300), status: method === "buddy" ? "pending" : "approved", createdAt: Date.now() });
+  });
+  if (ok && hasPhoto) photoCache.set(id, d.photo);
+  S.busy = false;
+  if (ok) { Object.assign(d, { mission: null, bonus: false, note: "", photo: null, hash: null, shotAt: null, shotNote: null }); toast(method === "buddy" ? K("크루원에게 확인을 요청했어요", "Sent to your crewmate") : K("인증 완료! GREEN +1", "Checked in! GREEN +1")); }
+  render(true);
+}
+async function doTip() {
+  const d = S.draft, m = me();
+  if (!m || !isActive(m)) return;
+  const text = (d.ttext || "").trim(); if (!text) return toast(K("팁 내용을 적어 주세요", "Write your tip"));
+  const id = rid(12);
+  const ok = await write(async db => {
+    if (d.tphoto) await db.doc("photos/tip_" + id).set({ data: d.tphoto, code: m.code, at: Date.now() });
+    await db.doc("tips/" + id).set({ crewId: m.crewId, code: m.code, title: (d.ttitle || "").trim().slice(0, 40), text: text.slice(0, 500), hasPhoto: !!d.tphoto, lang, likes: [], createdAt: Date.now() });
+  });
+  if (ok) { if (d.tphoto) photoCache.set("tip_" + id, d.tphoto); Object.assign(d, { ttitle: "", ttext: "", tphoto: null }); toast(K("팁 카드를 올렸어요", "Tip card posted")); render(true); }
+}
+async function doMe(f) {
+  const m = me(); if (!m) return;
+  const nick = (f.elements.pnick.value || "").trim();
+  if (!nick) return toast(K("닉네임을 입력해 주세요", "Enter a nickname"));
+  if (Object.values(S.members).some(x => x.code !== m.code && String(x.nickname).toLowerCase() === nick.toLowerCase())) return toast(K("이미 쓰고 있는 닉네임이에요", "That nickname is taken"));
+  const ok = await write(db => db.doc("members/" + m.code).update({ nickname: nick.slice(0, 14), hideRank: f.elements.phide.checked, mobility: f.elements.pmob.checked, photoHard: f.elements.pphoto.checked }));
+  if (ok) { S.draft = {}; toast(K("저장했어요", "Saved")); go("home"); }
+}
+async function doSurvey(kind) {
+  const m = me(), d = S.draft; if (!m) return;
+  const [k, w] = kind.split("-");
+  let path, data;
+  if (k === "ref") {
+    if (![d.q1, d.q2, d.q3].some(x => (x || "").trim())) return toast(K("한 문항 이상 적어 주세요", "Answer at least one question"));
+    path = `reflections/${m.code}_w${w}`; data = { code: m.code, week: +w, q1: d.q1 || "", q2: d.q2 || "", q3: d.q3 || "", at: Date.now() };
+  } else if (k === "mid") {
+    if (d.burden == null || !d.rankFeel) return toast(K("두 문항을 골라 주세요", "Please answer both questions"));
+    path = `checkins/${m.code}`; data = { code: m.code, burden: d.burden, rankFeel: d.rankFeel, comment: d.comment || "", at: Date.now() };
+  } else {
+    const mv = {}; for (const q of MQ) { if (d["t1_" + q.id] == null) return toast(K(`${q.id}에 답해 주세요`, `Please answer ${q.id}`)); mv[q.id] = d["t1_" + q.id]; }
+    if (d.r1b == null || !d.rankFeel || d.sat == null) return toast(K("모든 선택 문항에 답해 주세요", "Please answer every choice question"));
+    path = `t1/${m.code}`; data = { code: m.code, testId: m.testId, m: mv, r1b: d.r1b, rankFeel: d.rankFeel, sat: d.sat, comment: d.t1comment || "", at: Date.now() };
+  }
+  if (await write(db => db.doc(path).set(data))) { S.draft = {}; toast(K("제출했어요. 고마워요!", "Submitted. Thank you!")); go("home"); }
+}
+async function doAdminLogin(f) {
+  const pw = f.elements.apw.value || "";
+  if (pw.length < 4) return toast(K("비밀번호를 입력해 주세요 (4자 이상)", "Enter a password (4+ characters)"));
+  try {
+    if (S.adminSetup && S.mode === "local") { await S.db.doc("config/admin").set({ hash: await sha256("admin:" + pw) }); S.adminSetup = false; }
+    const res = await API.adminCheck(pw);
+    if (res === "setup") { S.adminSetup = true; render(true); return; }
+    if (!res) return toast(K("비밀번호가 맞지 않아요", "Wrong password"));
+    S.admin = true; S.adminPw = pw; S.priv = await API.privateAll(pw); toast(K("운영자 모드", "Organizer mode")); render(true);
+  } catch (e) { toast(K("확인하지 못했어요: ", "Couldn't verify: ") + (e.message || "")); }
+}
+async function doImport() {
+  const rows = parseCSV(S.draft.imp || "");
+  if (rows.length < 2) return toast(K("CSV 내용을 확인해 주세요", "Check the CSV"));
+  const h = rows[0].map(x => x.trim().toLowerCase()), ci = n => h.indexOf(n);
+  if (ci("code") < 0 || ci("crew_id") < 0) return toast(K("code, crew_id 열이 필요해요", "Need code and crew_id columns"));
+  const crews = {};
+  for (const r of rows.slice(1)) {
+    const code = (r[ci("code")] || "").trim().toUpperCase(), cid = (r[ci("crew_id")] || "").trim();
+    if (!code || !cid || !S.members[code]) continue;
+    const c = crews[cid] || (crews[cid] = { name: (ci("crew_name") >= 0 && r[ci("crew_name")]) ? r[ci("crew_name")].trim() : `${cid} Crew`, track: (ci("track") >= 0 && (r[ci("track")] || "").trim().toUpperCase()) || "", codes: [] });
+    c.codes.push(code);
+  }
+  const ids = Object.keys(crews); if (!ids.length) return toast(K("적용할 행이 없어요 (코드가 신청자와 맞는지 확인)", "No matching rows"));
+  let n = 0;
+  for (const cid of ids) {
+    const c = crews[cid], track = TORDER.includes(c.track) ? c.track : S.members[c.codes[0]].main;
+    const ok = await write(async db => {
+      await db.doc("crews/" + cid).set({ name: c.name, track, createdAt: Date.now() });
+      for (const code of c.codes) await db.doc("members/" + code).update({ crewId: cid, status: "active", track });
+    });
+    if (ok) n += c.codes.length;
+  }
+  S.draft.imp = ""; toast(K(`${ids.length}개 크루 · ${n}명 배정 완료`, `${ids.length} crews · ${n} people assigned`)); render(true);
+}
+async function doCfg(f) {
+  const v = n => f.elements[n] ? f.elements[n].value : "";
+  const nums = ["weeks", "dayCap", "weekCap", "completeDays", "buddyPerWeek", "buddyPerWeekUD", "wonPerPoint"];
+  const next = { ...cfg() };
+  ["startDate", "deadline", "applyDeadline", "crewReveal"].forEach(k => { if (v(k)) next[k] = v(k); });
+  nums.forEach(k => { const x = +v(k); if (!isNaN(x) && v(k) !== "") next[k] = Math.max(0, x); });
+  next.weeks = Math.max(1, next.weeks);
+  const sch = v("schools").split("\n").map(s => s.trim()).filter(Boolean); if (sch.length) next.schools = sch;
+  next.annKo = v("annKo"); next.annEn = v("annEn");
+  if (await write(db => db.doc("config/campaign").set(next))) toast(K("저장했어요", "Saved"));
+}
+function exportCSV(kind) {
+  const P = S.priv, ms = Object.values(S.members);
+  let rows;
+  if (kind === "assign") {
+    rows = [["code", "nickname", "school", "main", "sub", "level", "avail", "eng", "friend", "mobility", "photoHard", "status", "applied_at", "crew_id", "crew_name", "track"]];
+    ms.filter(m => m.status !== "replaced").sort((a, b) => (a.main + a.school).localeCompare(b.main + b.school)).forEach(m => rows.push([m.code, m.nickname, m.school, m.main, m.sub, m.level, (m.avail || []).join("|"), m.eng, m.friend, m.mobility ? 1 : 0, m.photoHard ? 1 : 0, m.status, new Date(m.createdAt).toISOString(), m.crewId || "", m.crewId && S.crews[m.crewId] ? S.crews[m.crewId].name : "", m.crewId && S.crews[m.crewId] ? S.crews[m.crewId].track : ""]));
+  } else if (kind === "members" || kind === "pay") {
+    rows = [["code", "nickname", "real_name", "contact", "school", "main", "sub", "level", "track", "status", "crew", "interview_ok", "ref", "total_points", ...Array.from({ length: cfg().weeks }, (_, i) => "w" + (i + 1)), "weekday_checkins", "completed", "reward_krw", "paid"]];
+    ms.forEach(m => rows.push([m.code, m.nickname, (P[m.code] || {}).realName || "", (P[m.code] || {}).contact || "", m.school, m.main, m.sub, m.level, m.track, m.status, m.crewId && S.crews[m.crewId] ? S.crews[m.crewId].name : "", m.interview ? 1 : 0, m.ref || "", pts(m.code), ...Array.from({ length: cfg().weeks }, (_, i) => pts(m.code, i + 1)), U(m.code).wd.size, completed(m.code) ? 1 : 0, reward(m.code), S.payouts[m.code] && S.payouts[m.code].paid ? 1 : 0]));
+  } else if (kind === "tests") {
+    rows = [["test_id", "at", "consent", "code", "ref", "lang", "A1", "A2", "A3", ...TEST.map((_, i) => "T" + (i + 1)), ...TEST.map((_, i) => "T" + (i + 1) + "_track"), ...A6_ROWS.map(r => "A6_" + r.id), ...MQ.map(q => q.id), "A7", "A8", "A9", "A10", "A12", "score_C", "score_S", "score_W", "score_D", "main", "sub", "level", "a6_done", "R1"]];
+    Object.entries(S.tests).forEach(([id, t]) => rows.push([id, new Date(t.at).toISOString(), t.consent ? 1 : 0, t.code || "", t.ref || "", t.lang || "", ...(t.consent ? [t.base.A1, GRADES[t.base.A2] ? GRADES[t.base.A2][0] : "", HOMES[t.base.A3] ? HOMES[t.base.A3][0] : ""] : ["", "", ""]),
+      ...TEST.map((_, i) => t.t && t.t[i] != null ? t.t[i] + 1 : ""), ...TEST.map((q, i) => t.t && t.t[i] != null ? q.a[t.t[i]][2] : ""), ...A6_ROWS.map(r => t.a6 && t.a6[r.id] != null ? A6_OPTS[t.a6[r.id]][0] : ""), ...MQ.map(q => t.m ? (t.m[q.id] ?? "") : ""),
+      t.p ? (t.p.A7 || []).map(i => A7_OPTS[i][0]).join("|") : "", t.p && t.p.A8 != null ? A8_OPTS[t.p.A8][0] : "", t.p && t.p.A9 != null ? A9_OPTS[t.p.A9][0] : "", t.p && t.p.A10 != null ? A10_OPTS[t.p.A10][0] : "", t.p ? t.p.A12 || "" : "",
+      ...(t.score ? TORDER.map(k => t.score[k]) : ["", "", "", ""]), t.main, t.sub || "", t.level || "", t.n ?? "", t.r1 || ""]));
+  } else if (kind === "proofs") {
+    rows = [["id", "created_at", "day", "week", "weekday", "code", "nickname", "school", "crew", "mission", "level", "bonus", "points", "points_counted", "method", "status", "buddy", "exif_mismatch", "note", "reason"]];
+    Object.entries(S.proofs).forEach(([id, p]) => rows.push([id, new Date(p.createdAt).toISOString(), p.day, p.week, isWeekday(p.day) ? 1 : 0, p.code, (S.members[p.code] || {}).nickname || "", p.school, S.crews[p.crewId] ? S.crews[p.crewId].name : "", MISSION[p.missionId] ? MISSION[p.missionId].ko : p.missionId, p.lv, p.bonus ? 1 : 0, p.points, U(p.code).gain[id] ?? 0, p.method, p.status, p.buddy || "", p.exifMismatch ? 1 : 0, p.note, p.reason || ""]));
+  } else if (kind === "reflections") {
+    rows = [["code", "week", "q1_easy", "q2_hard", "q3_next", "at"]];
+    Object.values(S.reflections).forEach(r => rows.push([r.code, r.week, r.q1, r.q2, r.q3, new Date(r.at).toISOString()]));
+  } else if (kind === "checkins") {
+    rows = [["code", "burden_1to5", "rank_feel", "comment", "at"]];
+    Object.values(S.checkins).forEach(r => rows.push([r.code, r.burden, r.rankFeel, r.comment, new Date(r.at).toISOString()]));
+  } else if (kind === "t1") {
+    rows = [["code", "test_id", ...MQ.map(q => q.id + "_T1"), "R1_after", "rank_feel", "satisfaction", "comment", "at"]];
+    Object.values(S.t1).forEach(r => rows.push([r.code, r.testId || "", ...MQ.map(q => r.m[q.id]), r.r1b, r.rankFeel, r.sat, r.comment, new Date(r.at).toISOString()]));
+  } else if (kind === "tips") {
+    rows = [["crew", "code", "title", "text", "likes", "at"]];
+    Object.values(S.tips).forEach(x => rows.push([S.crews[x.crewId] ? S.crews[x.crewId].name : x.crewId, x.code, x.title, x.text, (x.likes || []).length, new Date(x.createdAt).toISOString()]));
+  } else if (kind === "notify") {
+    rows = [["at", "type", "filter", "targets", "checkins_within_3h"]];
+    Object.values(S.notify).forEach(l => rows.push([new Date(l.at).toISOString(), l.type, l.filter, (l.targets || []).join("|"), Object.values(S.proofs).filter(p => (l.targets || []).includes(p.code) && p.createdAt >= l.at && p.createdAt <= l.at + 3 * 3600e3).length]));
+  }
+  if (rows) download(`anyway-green-${kind}-${today()}.csv`, toCSV(rows), "text/csv;charset=utf-8");
+}
+
+/* =====================================================================
+   13. 시작
+   ===================================================================== */
+function boot() {
+  if (store.get("ag.big", false)) document.documentElement.classList.add("big");
+  const qs = new URLSearchParams(location.search);
+  const ref = qs.get("ref"); if (ref) store.set("ag.ref", ref.slice(0, 16));
+  S.route = location.hash.replace(/^#\/?/, "") || "home";
+  const useSB = CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && window.supabase && window.supabase.createClient;
+  if (useSB) { S.mode = "supabase"; S.db = makeSupabaseDB(); }
+  else { S.mode = "local"; S.db = makeLocalDB(); if (CONFIG.SUPABASE_URL && !window.supabase) S.dbError = K("Supabase 라이브러리를 불러오지 못했어요 (인터넷 연결 확인)", "Couldn't load the Supabase library"); }
+  S.db.doc("config/campaign").onSnapshot(s => { S.cfg = { ...DEFAULT_CFG, ...(s.exists ? s.data() : {}) }; render(); });
+  for (const c of COLS) S.db.collection(c).onSnapshot(snap => { const o = {}; snap.docs.forEach(x => { o[x.id] = x.data(); }); S[c] = o; render(); });
+  render(true);
+}
+boot();
+})();
+</script>
+</body>
+</html>
