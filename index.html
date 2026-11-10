@@ -513,7 +513,12 @@ const isWeekday = d => { const x = dow(d); return x >= 1 && x <= 5; };
 const mmdd = d => { const [, m, dd] = d.split("-"); return `${+m}/${+dd}`; };
 const today = () => (window.__AG_TODAY || kstDay());
 const rid = (n = 12) => { const a = "abcdefghijkmnopqrstuvwxyz23456789", r = crypto.getRandomValues(new Uint8Array(n)); return [...r].map(v => a[v % a.length]).join(""); };
-const codeGen = () => { const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(4)); return "AG-" + [...r].map(v => a[v % a.length]).join(""); };
+/* 참가자 코드: 기억하기 쉬운 영어 단어 + 숫자 2자리 (예: LEAF27). 20단어 × 90숫자 = 1,800개 */
+const CODE_WORDS = ["LEAF", "TREE", "MOSS", "FERN", "SEED", "RAIN", "WAVE", "MINT", "LIME", "KIWI", "PINE", "SUN", "MOON", "STAR", "BEE", "OAK", "RIVER", "CLOUD", "BLOOM", "SPROUT"];
+const codeGen = () => { const r = crypto.getRandomValues(new Uint8Array(2)); return CODE_WORDS[r[0] % CODE_WORDS.length] + (10 + (r[1] % 90)); };
+/* 입력한 코드 정리: 대문자·공백 제거, 예전 형식(AG-XXXX)도 그대로 인정 */
+const normCode = v => { const c = String(v || "").toUpperCase().replace(/[\s-]/g, ""); return /^AG[A-Z0-9]{4}$/.test(c) ? "AG-" + c.slice(2) : c; };
+const validCode = c => /^[A-Z]{3,6}\d{2}$/.test(c) || /^AG-[A-Z0-9]{4}$/.test(c);
 async function sha256(input) {
   const buf = typeof input === "string" ? new TextEncoder().encode(input) : new Uint8Array(input);
   if (window.crypto && crypto.subtle) {
@@ -1187,7 +1192,7 @@ function viewLogin() {
   return `<form class="wrap narrow stack-lg" id="loginForm" novalidate style="max-width:460px">
     <h1 class="display" style="font-size:2rem">${K("참가자 로그인", "Participant login")}</h1>
     ${modeNotice()}
-    <label class="f">${K("참가자 코드", "Participant code")}<input type="text" name="lcode" value="${esc(d.lcode || "")}" placeholder="AG-XXXX" style="text-transform:uppercase;font-family:var(--f-display);letter-spacing:.1em" autocomplete="username"></label>
+    <label class="f">${K("참가자 코드", "Participant code")}<input type="text" name="lcode" value="${esc(d.lcode || "")}" placeholder="LEAF27" style="text-transform:uppercase;font-family:var(--f-display);letter-spacing:.1em" autocomplete="username"></label>
     <label class="f">PIN<input type="password" name="lpin" inputmode="numeric" maxlength="4" value="" autocomplete="current-password"></label>
     <div><button class="btn primary" type="submit">${K("로그인", "Log in")}</button></div>
     <p class="small muted">${K("아직 신청하지 않았다면 그린 테스트부터 해 주세요.", "Not signed up yet? Start with the Green Test.")} <button type="button" class="btn ghost sm" data-go="test">${K("그린 테스트", "Green Test")}</button></p>
@@ -1927,8 +1932,8 @@ async function doApply(f) {
   if (ok) { S.me = code; store.set("ag.session", code); S.draft = {}; toast(K("신청 완료!", "Signed up!")); go("applied"); } else render(true);
 }
 async function doLogin(f) {
-  const code = (f.elements.lcode.value || "").trim().toUpperCase(), pin = (f.elements.lpin.value || "").trim();
-  if (!/^AG-[A-Z0-9]{4}$/.test(code)) return toast(K("참가자 코드를 확인해 주세요 (예: AG-AB12)", "Check your participant code (e.g. AG-AB12)"));
+  const code = normCode(f.elements.lcode.value), pin = (f.elements.lpin.value || "").trim();
+  if (!validCode(code)) return toast(K("참가자 코드를 확인해 주세요 (예: LEAF27)", "Check your participant code (e.g. LEAF27)"));
   try {
     const ok = await API.login(code, await sha256(code + ":" + pin));
     if (!ok) return toast(K("PIN이 맞지 않아요", "Wrong PIN"));
@@ -2076,7 +2081,7 @@ async function doImport() {
   if (ci("code") < 0 || ci("crew_id") < 0) return toast(K("code, crew_id 열이 필요해요", "Need code and crew_id columns"));
   const crews = {}; let emptyCid = 0; const unknown = [];
   for (const r of rows.slice(1)) {
-    const code = (r[ci("code")] || "").trim().toUpperCase(), cid = (r[ci("crew_id")] || "").trim();
+    const code = normCode(r[ci("code")]), cid = (r[ci("crew_id")] || "").trim();
     if (!code) continue;
     if (!S.members[code]) { unknown.push(code); continue; }
     if (!cid) { emptyCid++; continue; }
