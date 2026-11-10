@@ -1157,7 +1157,7 @@ function viewApply() {
     </fieldset>
     <label class="f">${K("PIN 4자리 (로그인용)", "4-digit PIN (for login)")}<input type="password" name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" value="${esc(d.pin || "")}" required><span class="hint">${K("신청하면 참가자 코드가 나와요. 코드 + PIN으로 다른 기기에서도 로그인해요.", "You'll get a participant code. Use code + PIN to log in on any device.")}</span></label>
     <fieldset class="stack"><legend>${K("동의", "Consent")}</legend>
-      <label class="opt"><input type="checkbox" name="agree" ${d.agree ? "checked" : ""} required><span class="small">${K("(필수) 실명·연락처를 파일럿 운영(크루 안내·리워드 지급)에만 쓰고, 파일럿 종료 후 파기하는 데 동의해요. 인증 사진에는 얼굴·결제 정보가 나오지 않게 할게요.", "(Required) My name and contact are used only to run the pilot (crew notices, rewards) and deleted afterward. I'll keep faces and payment details out of photos.")} <button type="button" class="btn ghost sm" data-go="privacy" style="min-height:28px;padding:0 8px">${K("자세히", "Details")}</button></span></label>
+      <label class="opt"><input type="checkbox" name="agree" ${d.agree ? "checked" : ""} required><span class="small">${K("(필수) 실명·연락처를 파일럿 운영(크루 안내·리워드 지급)에만 쓰고, 파일럿 종료 후 30일 이내에 파기하는 데 동의해요. 인증 사진에는 얼굴·결제 정보가 나오지 않게 할게요.", "(Required) My name and contact are used only to run the pilot (crew notices, rewards) and deleted within 30 days after it ends. I'll keep faces and payment details out of photos.")} <button type="button" class="btn ghost sm" data-go="privacy" style="min-height:28px;padding:0 8px">${K("자세히", "Details")}</button></span></label>
       <label class="opt"><input type="checkbox" name="interview" ${d.interview ? "checked" : ""}><span class="small">${K("(선택) 파일럿 후 10~15분 인터뷰 연락을 받아도 좋아요.", "(Optional) You may contact me for a 10–15 min interview after the pilot.")}</span></label>
     </fieldset>
     <div><button class="btn primary lg" type="submit" ${S.busy ? "disabled" : ""}>${K("신청 완료", "Sign up")}</button></div>
@@ -1525,7 +1525,7 @@ function viewPrivacy() {
     <div class="card stack small">
       <p><b>${K("모으는 정보", "What we collect")}</b> — ${K("닉네임·학교·응답(공개 범위: 닉네임과 점수만), 실명·연락처(운영진만 열람), 인증 사진.", "Nickname, university and answers (only nickname and points are public); real name and contact (organizers only); check-in photos.")}</p>
       <p><b>${K("쓰는 곳", "Why")}</b> — ${K("크루 배정, 카카오톡 안내, 리워드 지급, 캠페인 효과 분석(익명).", "Crew placement, KakaoTalk notices, rewards, anonymous campaign analysis.")}</p>
-      <p><b>${K("보관 기간", "How long")}</b> — ${K("파일럿 종료 후 결과 분석이 끝나면 실명·연락처·사진을 파기해요. [보관 기간 확정 필요]", "Name, contact and photos are deleted after analysis. [Retention period to be confirmed]")}</p>
+      <p><b>${K("보관 기간", "How long")}</b> — ${K("실명·연락처·인증 사진은 파일럿 종료 후 30일 이내에 파기해요. 분석에는 참가자 코드로만 연결된 익명 데이터만 남겨요.", "Names, contacts and check-in photos are deleted within 30 days after the pilot ends. Only anonymous data linked by participant code is kept for analysis.")}</p>
       <p><b>${K("위치 정보", "Location")}</b> — ${K("웹사이트는 위치(GPS)를 수집하지 않아요.", "This site does not collect GPS location.")}</p>
       <p><b>${K("문의", "Contact")}</b> — ${K("어차피그린 운영진 (카카오톡 채널 또는 인스타그램)", "Anyway Green organizers (KakaoTalk or Instagram)")}</p>
     </div></div>`;
