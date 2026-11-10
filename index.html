@@ -1599,9 +1599,11 @@ const STATUS_L = { applied: ["신청", "Signed up"], active: ["활동", "Active"
 function adminAssign() {
   const ms = Object.values(S.members).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
   const AV = { wd_day: K("평일낮", "WD day"), wd_eve: K("평일저녁", "WD eve"), we: K("주말", "Wknd") };
-  return `<section class="card stack"><div class="sec-h"><h2>${K("1. 배정용 CSV 내보내기", "1. Export for crew assignment")}</h2><button class="btn sm primary" data-act="export" data-v="assign">${K("CSV 받기", "Download CSV")}</button></div>
-      <p class="small muted">${K("스프레드시트에서 crew_id(예: C1)와 crew_name을 채운 뒤 아래에 다시 올려 주세요. 규칙: 4~5명 · 같은 Track(3명 미만이면 sub로) · 2개교 이상 · 시간대 겹침 · 영어 필요자는 'both'와 · 친구 최대 2명.", "Fill in crew_id (e.g. C1) and crew_name in a spreadsheet, then import below. Rules: 4–5 people · same track (sub if fewer than 3) · 2+ universities · shared hours · 'en' with 'both' · max 2 friends.")}</p></section>
-    <form class="card stack" id="importForm" novalidate><div class="sec-h"><h2>${K("2. 배정 결과 가져오기", "2. Import assignments")}</h2></div>
+  const notes = S.assignNotes || [];
+  return `<section class="card stack"><div class="sec-h"><h2>${K("1. 배정 초안 만들기", "1. Draft crew assignments")}</h2><div class="row"><button class="btn sm primary" data-act="auto-assign">${K("자동 배정 초안 만들기", "Auto-draft crews")}</button><button class="btn sm" data-act="export" data-v="assign">${K("CSV 받기 (시트에서 직접 배정)", "Download CSV (assign in a sheet)")}</button></div></div>
+      <p class="small muted">${K("자동 초안은 파일럿 배정 규칙을 순서대로 적용해 아래 칸에 채워 줘요: ① 4~5명 ② 같은 Track (3명 미만이면 찰떡 크루 Track으로) ③ 2개교 이상 ④ 시간대 겹침 ⑤ 영어 필요자는 영어 가능자와 ⑥ 친구는 한 크루에 최대 2명. 초안을 확인·수정한 뒤 [배정 적용]을 누르세요. 시트로 직접 배정할 때는 crew_id 칸(예: S1)을 꼭 채워야 해요.", "The auto-draft applies the pilot rules in order and fills the box below: ① 4–5 people ② same track (sub-type if fewer than 3) ③ 2+ universities ④ shared hours ⑤ English speakers paired ⑥ max 2 friends per crew. Review, then press Apply. When assigning in a sheet, fill in crew_id (e.g. S1).")}</p>
+      ${notes.length ? `<div class="notice warn small"><b>${K("확인할 점", "Check")}</b><br>${notes.map(esc).join("<br>")}</div>` : ""}</section>
+    <form class="card stack" id="importForm" novalidate><div class="sec-h"><h2>${K("2. 배정 결과 적용하기", "2. Apply assignments")}</h2></div>
       <label class="f">${K("CSV 파일", "CSV file")}<input type="file" id="imp_file" accept=".csv,text/csv"></label>
       <label class="f">${K("또는 붙여넣기 (code, crew_id, crew_name, track 열 필요 · track은 C/S/W/D, 비우면 첫 멤버의 메인 유형)", "Or paste (needs code, crew_id, crew_name, track columns · track C/S/W/D, blank = first member's main type)")}<textarea name="imp" style="min-height:120px;font-family:monospace">${esc(S.draft.imp || "")}</textarea></label>
       <div><button class="btn primary" type="submit">${K("배정 적용 (상태 → 활동)", "Apply (status → active)")}</button></div></form>
@@ -1832,6 +1834,7 @@ document.addEventListener("click", async e => {
   /* 운영 */
   else if (act === "admin-tab") { S.adminTab = v; render(true); }
   else if (act === "admin-out") { S.admin = false; S.adminPw = null; S.priv = {}; go("home"); }
+  else if (act === "auto-assign") { const r = autoAssign(); S.draft.imp = r.csv; S.assignNotes = r.notes; render(true); toast(K("초안을 만들었어요. 확인 후 [배정 적용]을 눌러 주세요", "Draft ready. Review, then Apply")); }
   else if (act === "nfilter") { S.notifyFilter = v; render(true); }
   else if (act === "copy-msg") { const tk = a.dataset.t; copyText(fillTpl(S.draft["tpl_" + tk] ?? cfg()[tk], S.members[v])); }
   else if (act === "save-tpl") { const tk = a.dataset.t; const val = S.draft["tpl_" + tk] ?? cfg()[tk]; if (await write(db => db.doc("config/campaign").set({ ...cfg(), [tk]: val }))) toast(K("저장했어요", "Saved")); }
@@ -2024,29 +2027,76 @@ async function doAdminLogin(f) {
     S.admin = true; S.adminPw = pw; S.priv = await API.privateAll(pw); toast(K("운영자 모드", "Organizer mode")); render(true);
   } catch (e) { toast(K("확인하지 못했어요: ", "Couldn't verify: ") + (e.message || "")); }
 }
+/* 자동 배정 초안 — 파일럿 운영안의 배정 규칙 6가지를 순서대로 적용 (사람이 확인 후 적용) */
+function autoAssign() {
+  const notes = [];
+  const pool = Object.values(S.members).filter(m => ["applied", "active", "contact"].includes(m.status));
+  if (!pool.length) { notes.push(K("배정할 신청자가 없어요 (상태가 신청·활동·연락 중인 사람만 대상)", "No one to assign")); return { csv: "", notes }; }
+  // ② 같은 Track, 3명 미만이면 찰떡 크루(sub) Track으로
+  const tr = new Map(pool.map(m => [m.code, m.main]));
+  const count = () => { const c = {}; tr.forEach(t => { c[t] = (c[t] || 0) + 1; }); return c; };
+  let c0 = count();
+  pool.forEach(m => { if ((c0[m.main] || 0) < 3 && m.sub) tr.set(m.code, m.sub); });
+  let c1 = count();
+  // 그래도 3명 미만인 Track은 가장 큰 Track에 합침
+  const biggest = Object.entries(c1).sort((a, b) => b[1] - a[1])[0][0];
+  Object.entries(c1).forEach(([t, n]) => { if (n < 3 && t !== biggest) { pool.filter(m => tr.get(m.code) === t).forEach(m => tr.set(m.code, biggest)); notes.push(K(`${TRACKS[t].code} 인원이 적어 ${TRACKS[biggest].code} 크루로 합쳤어요`, `${TRACKS[t].code} too small, merged into ${TRACKS[biggest].code}`)); } });
+  const moved = pool.filter(m => tr.get(m.code) !== m.main);
+  if (moved.length) notes.push(K(`메인 Track과 다르게 배정: ${moved.map(m => `${m.nickname}(${m.main}→${tr.get(m.code)})`).join(", ")}`, `Moved from main track: ${moved.map(m => m.nickname).join(", ")}`));
+  const rows = [["code", "crew_id", "crew_name", "track", "nickname", "school", "avail", "eng", "friend"]];
+  const groups = {}; pool.forEach(m => (groups[tr.get(m.code)] = groups[tr.get(m.code)] || []).push(m));
+  for (const [t, ms] of Object.entries(groups)) {
+    const n = ms.length, k = Math.max(1, Math.ceil(n / 5));
+    if (n < 4) notes.push(K(`${TRACKS[t].code} 크루가 ${n}명이에요 (기준 4~5명). 예비 인원으로 채우거나 그대로 운영할지 정해 주세요.`, `${TRACKS[t].code} crew has only ${n} people`));
+    // ④ 시간대 → ③ 학교 순으로 정렬한 뒤 돌아가며 넣어 학교를 섞음
+    const sig = m => (m.avail || []).slice().sort().join("|");
+    const order = ms.slice().sort((a, b) => sig(a).localeCompare(sig(b)) || String(a.school).localeCompare(String(b.school)));
+    const crews = Array.from({ length: k }, () => []);
+    const ok = (cr, m) => cr.length < 5 && (!m.friend || cr.filter(x => x.friend === m.friend).length < 2); // ⑥ 친구 최대 2명
+    const english = order.filter(m => m.eng === "en"), rest = order.filter(m => m.eng !== "en");
+    let i = 0;
+    for (const m of rest) { let tries = 0; while (!ok(crews[i % k], m) && tries < k) { i++; tries++; } crews[i % k].push(m); i++; }
+    for (const m of english) { // ⑤ 영어 필요자는 영어 가능(both) 크루원이 있는 크루로
+      const cr = crews.find(c => ok(c, m) && c.some(x => x.eng === "both")) || crews.slice().sort((a, b) => a.length - b.length)[0];
+      cr.push(m); if (!cr.some(x => x.eng === "both")) notes.push(K(`${m.nickname}: 영어 가능 크루원이 없는 크루에 배정됨`, `${m.nickname}: no English helper in crew`));
+    }
+    crews.forEach((cr, j) => {
+      const id = `${t}${j + 1}`, name = `${TRACKS[t].code} ${j + 1}${K("크루", " Crew")}`;
+      if (new Set(cr.map(m => m.school)).size < 2 && cr.length > 1) notes.push(K(`${name}: 학교가 한 곳뿐이에요 (규칙 ③)`, `${name}: only one university`));
+      if (k > 1 && cr.length < 4) notes.push(K(`${name}: ${cr.length}명이에요 (기준 4~5명)`, `${name}: ${cr.length} people`));
+      cr.forEach(m => rows.push([m.code, id, name, t, m.nickname, m.school, (m.avail || []).join("|"), m.eng, m.friend || ""]));
+    });
+  }
+  return { csv: rows.map(r => r.map(x => /[",\n]/.test(String(x)) ? `"${String(x).replace(/"/g, '""')}"` : x).join(",")).join("\n"), notes };
+}
 async function doImport() {
   const rows = parseCSV(S.draft.imp || "");
   if (rows.length < 2) return toast(K("CSV 내용을 확인해 주세요", "Check the CSV"));
   const h = rows[0].map(x => x.trim().toLowerCase()), ci = n => h.indexOf(n);
   if (ci("code") < 0 || ci("crew_id") < 0) return toast(K("code, crew_id 열이 필요해요", "Need code and crew_id columns"));
-  const crews = {};
+  const crews = {}; let emptyCid = 0; const unknown = [];
   for (const r of rows.slice(1)) {
     const code = (r[ci("code")] || "").trim().toUpperCase(), cid = (r[ci("crew_id")] || "").trim();
-    if (!code || !cid || !S.members[code]) continue;
+    if (!code) continue;
+    if (!S.members[code]) { unknown.push(code); continue; }
+    if (!cid) { emptyCid++; continue; }
     const c = crews[cid] || (crews[cid] = { name: (ci("crew_name") >= 0 && r[ci("crew_name")]) ? r[ci("crew_name")].trim() : `${cid} Crew`, track: (ci("track") >= 0 && (r[ci("track")] || "").trim().toUpperCase()) || "", codes: [] });
     c.codes.push(code);
   }
-  const ids = Object.keys(crews); if (!ids.length) return toast(K("적용할 행이 없어요 (코드가 신청자와 맞는지 확인)", "No matching rows"));
+  const ids = Object.keys(crews);
+  if (!ids.length) return toast(emptyCid ? K(`crew_id 칸이 비어 있어요 (${emptyCid}명). [자동 배정 초안 만들기]를 누르거나, 시트에서 crew_id(예: S1)를 채워 주세요.`, `crew_id is empty for ${emptyCid} rows. Use Auto-draft or fill crew_id (e.g. S1).`) : K(`신청자와 맞는 코드가 없어요${unknown.length ? ": " + unknown.slice(0, 3).join(", ") : ""}`, "No matching participant codes"));
   let n = 0;
   for (const cid of ids) {
-    const c = crews[cid], track = TORDER.includes(c.track) ? c.track : S.members[c.codes[0]].main;
+    const c = crews[cid], tcode = Object.keys(TRACKS).find(k => TRACKS[k].code === c.track) || c.track;
+    const track = TORDER.includes(tcode) ? tcode : S.members[c.codes[0]].main;
     const ok = await write(async db => {
       await db.doc("crews/" + cid).set({ name: c.name, track, createdAt: Date.now() });
       for (const code of c.codes) await db.doc("members/" + code).update({ crewId: cid, status: "active", track });
     });
     if (ok) n += c.codes.length;
   }
-  S.draft.imp = ""; toast(K(`${ids.length}개 크루 · ${n}명 배정 완료`, `${ids.length} crews · ${n} people assigned`)); render(true);
+  S.draft.imp = ""; S.assignNotes = [];
+  toast(K(`${ids.length}개 크루 · ${n}명 배정 완료${emptyCid ? ` (crew_id 빈 ${emptyCid}명 제외)` : ""}`, `${ids.length} crews · ${n} people assigned${emptyCid ? ` (${emptyCid} skipped)` : ""}`)); render(true);
 }
 async function doCfg(f) {
   const v = n => f.elements[n] ? f.elements[n].value : "";
