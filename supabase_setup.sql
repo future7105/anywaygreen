@@ -89,6 +89,10 @@ begin
   delete from public.ag_docs where path = p_path;
 end $$;
 
+-- 표 접근 권한 (보안 정책이 실제 범위를 제한함)
+grant select, insert, update, delete on public.ag_docs to anon;
+revoke all on public.ag_secret from anon, authenticated;
+
 grant execute on function public.ag_login(text, text) to anon;
 grant execute on function public.ag_admin_exists() to anon;
 grant execute on function public.ag_admin_setup(text) to anon;
