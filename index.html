@@ -231,7 +231,7 @@ legend{font-weight:500;font-size:.93rem;margin-bottom:8px;padding:0}
 .tabs button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .feed{display:flex;flex-direction:column;gap:12px}
 .post{display:grid;grid-template-columns:1fr;gap:12px;border:1px solid var(--line);border-radius:var(--r);padding:14px;background:var(--surface)}
-.post .ph{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--rs);background:var(--surface2)}
+.post .ph{width:100%;aspect-ratio:4/3;object-fit:contain;border-radius:var(--rs);background:var(--surface2)}
 @media (min-width:640px){.post.withph{grid-template-columns:170px 1fr}.post .ph{aspect-ratio:1/1}}
 .post .body{min-width:0;display:flex;flex-direction:column;gap:6px}
 .post .meta2{font-size:.8rem;color:var(--muted)}
@@ -610,6 +610,8 @@ function makeLocalDB() {
   return { doc, collection: col };
 }
 
+/* 운영자만 쓸 수 있는 데이터 — Supabase에서는 운영자 비밀번호 확인 함수(ag_admin_set)를 거쳐서만 저장됨 */
+const ADMIN_COLS = ["config", "crews", "notify", "payouts"];
 function makeSupabaseDB() {
   const sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
   S.sb = sb;
@@ -652,12 +654,17 @@ function makeSupabaseDB() {
     },
     async set(v) {
       const val = JSON.parse(JSON.stringify(v));
-      const { error } = await sb.from(T).upsert({ path: p, col: parent(p), data: val, updated_at: new Date().toISOString() });
+      const { error } = ADMIN_COLS.includes(parent(p))
+        ? await sb.rpc("ag_admin_set", { pw: S.adminPw || "", p_path: p, p_col: parent(p), p_data: val })
+        : await sb.from(T).upsert({ path: p, col: parent(p), data: val, updated_at: new Date().toISOString() });
       if (error) fail(error);
       if (!p.startsWith("photos/")) { cache[p] = val; notify(p); }
     },
     async update(v) { if (cache[p] === undefined) throw { code: "missing" }; await doc(p).set({ ...cache[p], ...v }); },
-    async delete() { const { error } = await sb.from(T).delete().eq("path", p); if (error) fail(error); delete cache[p]; notify(p); },
+    async delete() {
+      const { error } = ADMIN_COLS.includes(parent(p)) ? await sb.rpc("ag_admin_delete", { pw: S.adminPw || "", p_path: p }) : await sb.from(T).delete().eq("path", p);
+      if (error) fail(error); delete cache[p]; notify(p);
+    },
     onSnapshot(fn) { sub(docL, p, fn, () => snapDoc(p)); }
   });
   const col = c => ({
@@ -687,6 +694,9 @@ const API = {
   },
   async adminCheck(pw) {
     if (S.mode === "supabase") {
+      const ex = await S.sb.rpc("ag_admin_exists");
+      if (ex.error) throw { code: "unavailable", message: ex.error.message };
+      if (!ex.data) return "setup";
       const { data, error } = await S.sb.rpc("ag_admin_check", { pw });
       if (error) throw { code: "unavailable", message: error.message };
       return !!data;
@@ -1047,7 +1057,7 @@ function viewTest() {
   }
   const pct = Math.round((st.i - 1) / (STEPS.length - 2) * 100);
   const head = `<div class="stack"><div class="sec-h"><span class="eyebrow">${partLabel(step)}</span><span class="num small muted">${pct}%</span></div><div class="qbar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div></div>`;
-  const back = `<button class="btn ghost sm" data-act="t-back">← ${K("이전", "Back")}</button>`;
+  const back = `<span class="row"><button class="btn ghost sm" data-act="t-back">← ${K("이전", "Back")}</button><button class="btn ghost sm" data-act="retake">${K("처음부터", "Restart")}</button></span>`;
   if (step === "base") {
     const b = st.base, schools = [...cfg().schools, "기타"];
     const ok = b.A1 && b.A2 != null && b.A3 != null;
@@ -1109,6 +1119,7 @@ function viewResult() {
       <div class="chips" style="justify-content:center">${[1, 2, 3, 4, 5].map(v => `<button class="chip sq" data-act="r1" data-v="${v}" aria-pressed="${st.r1 === v}">${v}</button>`).join("")}</div>
       <p class="hint">${K("1 전혀 안 맞아요 · 5 완전 나예요", "1 not at all · 5 totally me")}</p>
     </div>
+    ${trackMissionsHTML(r.main)}
     <div class="row" style="justify-content:center">
       ${m ? "" : `<button class="btn primary lg" data-go="apply">${K("이 결과로 파일럿 신청하기", "Join the pilot with this result")}</button>`}
       <button class="btn" data-act="share-result">${icon("link")}${K("결과 링크 공유", "Share link")}</button>
@@ -1255,8 +1266,8 @@ function viewMission() {
   const sel = d.mission && MISSION[d.mission], selBonus = !!(sel && d.bonus);
   const bLimit = m.photoHard ? c.buddyPerWeekUD : c.buddyPerWeek, bUsed = myBuddyUsed(m, w);
   const crewmates = crewMembers(m.crewId).filter(x => x.code !== m.code);
-  const methods = [["photo", K("사진", "Photo"), K("촬영 시각이 남은 사진", "A photo with its timestamp")], ["capture", K("화면 캡처", "Screenshot"), K("스크린타임·교통카드 내역 등", "Screen time, transit card history…")], ["buddy", K("버디 인증", "Buddy check"), K(`크루원이 대신 확인 · 이번 주 ${bUsed}/${bLimit}회`, `A crewmate confirms · ${bUsed}/${bLimit} this week`)]];
-  if (m.photoHard) methods.push(["text", K("글 인증", "Text"), K("무엇을 했는지 짧게 적기", "Describe what you did")]);
+  const methods = methodsFor(m, sel, bUsed, bLimit);
+  if (sel && !methods.some(x => x[0] === d.method && !x[3])) d.method = (methods.find(x => !x[3]) || [null])[0];
   const mine = Object.entries(S.proofs).filter(([, p]) => p.code === m.code).sort((a, b) => b[1].createdAt - a[1].createdAt);
   const u = U(m.code);
   return `<div class="wrap stack-lg">
@@ -1275,9 +1286,9 @@ function viewMission() {
       </button>`; }).join("")}</div></section>`).join("")}
     ${dayOpts.length ? `<form class="card stack" id="proofForm" novalidate>
       <div class="sec-h"><h2>${sel ? esc(L(sel)) : K("위에서 미션을 골라 주세요", "Pick a mission above")}</h2>${sel ? `<span class="num" style="color:var(--accent)">+${missionPoints(sel, selBonus)}P</span>` : ""}</div>
-      <fieldset><legend>${K("인증 방법", "How to verify")}</legend><div class="grid2">${methods.map(([v, l, h]) => `<label class="opt"><input type="radio" name="method" value="${v}" ${(d.method || "photo") === v ? "checked" : ""} ${v === "buddy" && (bUsed >= bLimit || !crewmates.length) ? "disabled" : ""}><span><b>${l}</b><br><span class="hint">${h}</span></span></label>`).join("")}</div></fieldset>
-      ${["photo", "capture"].includes(d.method || "photo") ? `<label class="f">${(d.method || "photo") === "photo" ? K("사진 올리기", "Upload a photo") : K("캡처 올리기", "Upload a screenshot")}<input type="file" id="p_file" accept="image/*"><span class="hint">${K("얼굴·학번·결제 정보가 보이지 않게 해 주세요. 자동으로 작게 줄여 저장돼요.", "Keep faces, student IDs and payment details out. Images are resized automatically.")}</span></label>
-        ${d.photo ? `<img class="preview" src="${d.photo}" alt="${K("올릴 사진 미리보기", "Preview of the image to upload")}">${d.shotNote ? `<p class="hint">${esc(d.shotNote)}</p>` : ""}` : ""}` : ""}
+      ${sel ? `<fieldset><legend>${K("인증 방법", "How to verify")} <span class="hint">· ${K("이 미션에 맞는 방법만 보여요", "Only methods that fit this mission")}</span></legend><div class="grid2">${methods.map(([v, l, h, dis]) => `<label class="opt" ${dis ? 'style="opacity:.5"' : ""}><input type="radio" name="method" value="${v}" ${d.method === v ? "checked" : ""} ${dis ? "disabled" : ""}><span><b>${l}</b><br><span class="hint">${h}${dis ? ` · ${dis}` : ""}</span></span></label>`).join("")}</div></fieldset>
+      ${IMG_METHODS.includes(d.method) ? `<label class="f">${d.method === "photo" ? K("카메라로 지금 촬영하기", "Take a photo now") : K("캡처 이미지 올리기", "Upload a screenshot")}<input type="file" id="p_file" accept="image/*" ${d.method === "photo" ? 'capture="environment"' : ""}><span class="hint">${d.method === "photo" ? K("촬영 시각·닉네임이 사진 아래에 자동으로 찍혀요. 얼굴·타인이 나오지 않게 찍어 주세요.", "The time and your nickname are stamped on the photo. Keep faces out.") : K("결제 금액·카드번호·학번 등 개인정보는 가리고 올려 주세요. 위치 기록은 저장하지 않고 이 이미지 한 장만 받아요.", "Hide payment amounts, card numbers and IDs. We don't store location, only this image.")}</span></label>
+        ${d.photo ? `<img class="preview" src="${d.photo}" alt="${K("올릴 이미지 미리보기", "Preview of the image to upload")}">${d.shotNote ? `<p class="hint">${esc(d.shotNote)}</p>` : ""}` : ""}` : ""}` : ""}
       ${(d.method) === "buddy" ? `<label class="f">${K("확인해 줄 크루원", "Crewmate who'll confirm")}<select name="buddy">${crewmates.map(x => `<option value="${esc(x.code)}" ${d.buddy === x.code ? "selected" : ""}>${esc(x.nickname)}</option>`).join("")}</select><span class="hint">${K("크루원이 '크루' 화면에서 확인하면 포인트가 들어와요.", "Points arrive once they confirm in the Crew tab.")}</span></label>` : ""}
       <label class="f">${d.method === "text" ? K("무엇을 했나요? (필수)", "What did you do? (required)") : K("한 줄 메모 (선택)", "Short note (optional)")}<textarea name="note" maxlength="300">${esc(d.note || "")}</textarea></label>
       <div><button class="btn primary" type="submit" ${S.busy ? "disabled" : ""}>${K("인증 올리기", "Submit check-in")}</button></div>
@@ -1286,6 +1297,14 @@ function viewMission() {
       ${mine.length ? `<div class="feed">${mine.slice(0, 40).map(([id, p]) => proofCard(id, p)).join("")}</div>` : `<p class="muted">${K("아직 없어요.", "Nothing yet.")}</p>`}
     </section>
   </div>`;
+}
+/* 결과 화면: 내 Track 미션 6개(L1~L3)를 주차별로 보여 줌 */
+function trackMissionsHTML(tr) {
+  const t = TRACKS[tr];
+  return `<section class="card stack"><div class="sec-h"><h2>${K(`나의 ${t.code} 미션`, `My ${t.code} missions`)}</h2><span class="small muted">${K("주마다 한 단계씩 열려요", "One level opens each week")}</span></div>
+    ${[1, 2, 3].map(lv => `<div class="stack" style="gap:6px"><span class="eyebrow">L${lv} · W${lv} · ${L(PHASES[lv - 1])} · +${lv === 1 ? 10 : 15}P</span>${MISSIONS.filter(x => x.tr === tr && x.lv === lv).map(x => `<div class="row" style="gap:8px"><span aria-hidden="true" style="color:var(--accent)">●</span><span>${esc(L(x))}</span><span class="pill tiny">${(EV[x.id] || ["photo"]).map(k => P2(METHOD_L[k])).join(" · ")}</span></div>`).join("")}</div>`).join("")}
+    <p class="small muted">${K("+ 공통 미션(걷기·대중교통 5P)은 모든 Track에서, 3주차에는 STUDY 보너스 미션도 열려요.", "+ Common missions (walking, transit 5P) for every track; STUDY bonus missions open in week 3.")}</p>
+  </section>`;
 }
 function missionPreview(m) {
   const tr = m.track || m.main;
@@ -1297,13 +1316,58 @@ function statusPill(p) {
   if (p.status === "rejected") return `<span class="pill bad">${K("반려", "Rejected")}</span>`;
   return `<span class="pill wait">${K("버디 확인 대기", "Waiting for buddy")}</span>`;
 }
-const METHOD_L = { photo: ["사진", "Photo"], capture: ["캡처", "Screenshot"], buddy: ["버디", "Buddy"], text: ["글", "Text"] };
+const METHOD_L = { photo: ["실시간 사진", "Live photo"], capture: ["활동 캡처", "Screenshot"], route: ["이동 기록", "Route record"], buddy: ["버디", "Buddy"], text: ["글", "Text"] };
+const IMG_METHODS = ["photo", "capture", "route"];
+/* 미션별로 쓸 수 있는 인증 방법 — 캠페인 기획안 '인증 방식' 표 기준 (기본: 실시간 사진) */
+const EV = {
+  S2a: ["capture", "photo"], S2b: ["capture"], S3a: ["capture"], S3b: ["capture"],
+  W1a: ["photo", "capture"], W2b: ["capture", "photo"], W3a: ["capture"], W3b: ["capture"],
+  D1b: ["capture", "photo"], X1: ["capture", "route", "photo"], X2: ["capture", "route", "photo"], Z2: ["capture", "photo"]
+};
+const EV_HINT = {
+  S2a: ["PDF에 필기한 화면", "Your annotated PDF"], S2b: ["화질 설정 화면", "The quality setting screen"], S3a: ["정리한 저장공간·메일함 화면", "Your cleaned-up storage or inbox"],
+  S3b: ["스크린타임 화면 (전날과 비교)", "Screen Time vs. yesterday"], W1a: ["장보기 목록 또는 가계부", "Your list or budget app"], W2b: ["장바구니에 담아 둔 화면", "The item left in your cart"],
+  W3a: ["가계부·결제 앱의 오늘 지출 0원", "₩0 spent today in your budget app"], W3b: ["중고거래·나눔 글 화면", "Your resale or giveaway post"], D1b: ["주문 요청사항 '수저 X' 화면", "The 'no cutlery' order note"],
+  X1: ["걸음 수 화면", "Your step count"], X2: ["교통카드 이용 내역", "Transit card history"], Z2: ["묶음 배송 주문 화면", "The combined-delivery order"]
+};
+function methodsFor(m, sel, bUsed, bLimit) {
+  if (!sel) return [];
+  const crewmates = crewMembers(m.crewId).filter(x => x.code !== m.code);
+  const hint = EV_HINT[sel.id] ? P2(EV_HINT[sel.id]) : "";
+  const def = {
+    photo: [K("실시간 사진", "Live photo"), K("카메라로 바로 촬영 · 촬영 시각 자동 표시", "Shoot now · time stamped automatically")],
+    capture: [K("활동 캡처", "Screenshot"), hint || K("스크린타임·가계부·교통카드 내역 등", "Screen time, budget or transit history")],
+    route: [K("이동 기록 캡처 (선택)", "Route record (optional)"), K("지도·운동 앱의 출발→도착 기록 캡처", "Start→end record from a map or fitness app")]
+  };
+  const out = (EV[sel.id] || ["photo"]).map(k => [k, def[k][0], def[k][1], ""]);
+  const bDis = !crewmates.length ? K("크루원이 없어요", "No crewmates") : bUsed >= bLimit ? K("이번 주 횟수를 다 썼어요", "Used up this week") : "";
+  out.push(["buddy", K("버디 인증", "Buddy check"), K(`크루원이 대신 확인 · 이번 주 ${bUsed}/${bLimit}회`, `A crewmate confirms · ${bUsed}/${bLimit} this week`), bDis]);
+  if (m.photoHard) out.push(["text", K("글 인증", "Text"), K("무엇을 했는지 짧게 적기", "Describe what you did"), ""]);
+  return out;
+}
+/* 사진 아래에 시각·닉네임 띠를 찍어 '실시간 시간 표시 사진'으로 만듦 */
+function stampImage(dataUrl, label) {
+  return new Promise(res => {
+    const img = new Image();
+    img.onload = () => {
+      const band = Math.max(28, Math.round(img.width * 0.06));
+      const c = document.createElement("canvas"); c.width = img.width; c.height = img.height + band;
+      const g = c.getContext("2d"); g.drawImage(img, 0, 0);
+      g.fillStyle = "#0B0D0C"; g.fillRect(0, img.height, c.width, band);
+      g.fillStyle = "#2BD4A4"; g.font = `700 ${Math.round(band * 0.46)}px 'Noto Sans KR', sans-serif`; g.textBaseline = "middle";
+      g.fillText(label, Math.round(band * 0.4), img.height + band / 2, c.width - band * 0.8);
+      res(c.toDataURL("image/jpeg", 0.72));
+    };
+    img.onerror = () => res(dataUrl);
+    img.src = dataUrl;
+  });
+}
 function proofCard(id, p, opts = {}) {
   const mi = MISSION[p.missionId], who = S.members[p.code], g = U(p.code).gain[id];
   return `<article class="post ${p.hasPhoto ? "withph" : ""}">
     ${p.hasPhoto ? `<img class="ph" data-photo="${esc(id)}" alt="${esc(K("인증 사진: ", "Check-in photo: ") + L(mi || {}))}">` : ""}
     <div class="body">
-      <div class="row">${statusPill(p)}<span class="pill">${P2(METHOD_L[p.method] || ["", ""])}</span><span class="pill">W${p.week} · ${mmdd(p.day)}</span>${p.bonus ? `<span class="pill gold">BONUS</span>` : ""}${opts.admin && p.exifMismatch ? `<span class="pill wait">${K("촬영일 다름", "Date mismatch")}</span>` : ""}</div>
+      <div class="row">${statusPill(p)}<span class="pill">${P2(METHOD_L[p.method] || ["", ""])}</span><span class="pill">W${p.week} · ${mmdd(p.day)}</span>${p.bonus ? `<span class="pill gold">BONUS</span>` : ""}${opts.admin && p.exifMismatch ? `<span class="pill wait">${K("촬영 정보 확인", "Check timestamp")}</span>` : ""}</div>
       <b>${esc(mi ? L(mi) : p.missionId)} <span class="num" style="color:var(--accent)">+${p.status === "approved" && g != null ? g : p.points}P</span>${p.status === "approved" && g != null && g < p.points ? ` <span class="hint">(${K("상한 적용", "cap applied")})</span>` : ""}</b>
       ${p.note ? `<p class="small">${esc(p.note)}</p>` : ""}
       ${p.reason ? `<p class="small" style="color:var(--bad)">${K("사유", "Reason")}: ${esc(p.reason)}</p>` : ""}
@@ -1473,8 +1537,9 @@ function viewAdmin() {
     return `<form class="wrap narrow stack-lg" id="adminLogin" novalidate style="max-width:460px">
       <h1 class="display" style="font-size:2rem">${K("운영진 로그인", "Organizer login")}</h1>
       ${modeNotice()}
-      ${S.adminSetup ? `<div class="notice">${K("처음이에요. 운영자 비밀번호를 정해 주세요 (로컬 모드 전용).", "First time here. Set an organizer password (local mode only).")}</div>` : ""}
-      <label class="f">${K("운영자 비밀번호", "Organizer password")}<input type="password" name="apw" autocomplete="current-password"></label>
+      ${S.adminSetup ? `<div class="notice">${K("처음이에요. 팀에서 쓸 운영자 비밀번호를 정해 주세요 (8자 이상). 한 번 정하면 사이트에서는 바꿀 수 없어요.", "First time here. Choose the team's organizer password (8+ characters). It can't be changed from the site later.")}</div>` : ""}
+      <label class="f">${K("운영자 비밀번호", "Organizer password")}<input type="password" name="apw" autocomplete="${S.adminSetup ? "new-password" : "current-password"}"></label>
+      ${S.adminSetup ? `<label class="f">${K("비밀번호 확인", "Confirm password")}<input type="password" name="apw2" autocomplete="new-password"></label>` : ""}
       <div><button class="btn primary" type="submit">${S.adminSetup ? K("비밀번호 설정", "Set password") : K("들어가기", "Enter")}</button></div>
     </form>`;
   }
@@ -1583,7 +1648,7 @@ function adminReview() {
   return `<section class="card stack"><div class="sec-h"><h2>${K("무작위 검수", "Random audit")}</h2><button class="btn sm primary" data-act="sample">${K("10건 무작위 뽑기", "Draw 10 at random")}</button></div>
       <p class="small muted">${K("매주 무작위로 확인하고, 같은 사진 반복 등 부정 인증은 포인트를 취소해요. (같은 파일은 업로드 단계에서 자동 차단)", "Audit weekly; cancel points for fraud. Identical files are blocked at upload.")}</p>
       ${sample.length ? `<div class="feed">${sample.map(([id, p]) => proofCard(id, p, { admin: true })).join("")}</div>` : ""}</section>
-    <section class="stack"><div class="sec-h"><h2>${K("촬영일이 실천일과 다른 사진", "Photo date differs from action day")}</h2><span class="pill wait">${flagged.length}</span></div>
+    <section class="stack"><div class="sec-h"><h2>${K("촬영 정보 확인 필요 (촬영일≠실천일, 또는 촬영 시각 없음)", "Check timestamp (date mismatch or missing)")}</h2><span class="pill wait">${flagged.length}</span></div>
       ${flagged.length ? `<div class="feed">${flagged.slice(0, 30).map(([id, p]) => proofCard(id, p, { admin: true })).join("")}</div>` : `<p class="muted small">–</p>`}</section>
     <section class="stack"><div class="sec-h"><h2>${K("버디 확인 대기", "Waiting for buddy")}</h2><span class="pill wait">${pend.length}</span></div>
       ${pend.length ? `<div class="feed">${pend.slice(0, 30).map(([id, p]) => proofCard(id, p, { admin: true })).join("")}</div>` : `<p class="muted small">–</p>`}</section>`;
@@ -1743,7 +1808,7 @@ document.addEventListener("click", async e => {
   else if (act === "avail") { const arr = d.avail || (d.avail = []); const j = arr.indexOf(v); if (j >= 0) arr.splice(j, 1); else arr.push(v); render(true); }
   /* 미션 */
   else if (act === "pickday") { d.day = v; d.mission = null; render(true); }
-  else if (act === "pick-mission") { d.mission = v; d.bonus = a.dataset.b === "1"; render(true); $("#proofForm") && $("#proofForm").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" }); }
+  else if (act === "pick-mission") { d.mission = v; d.bonus = a.dataset.b === "1"; d.method = (EV[v] || ["photo"])[0]; Object.assign(d, { photo: null, hash: null, shotAt: null, shotNote: null }); render(true); $("#proofForm") && $("#proofForm").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" }); }
   else if (act === "buddy-ok" || act === "buddy-no") {
     const p = S.proofs[v]; if (!p || !me() || p.buddy !== me().code) return;
     await write(db => db.doc("proofs/" + v).update({ status: act === "buddy-ok" ? "approved" : "rejected", reviewedAt: Date.now() }));
@@ -1792,7 +1857,7 @@ document.addEventListener("input", e => {
 });
 document.addEventListener("change", async e => {
   const el = e.target, d = S.draft;
-  if (el.type === "radio" && el.name === "method") { d.method = el.value; render(true); return; }
+  if (el.type === "radio" && el.name === "method") { d.method = el.value; Object.assign(d, { photo: null, hash: null, shotAt: null, shotNote: null }); render(true); return; }
   if (el.type === "checkbox" && el.name) { d[el.name] = el.checked; return; }
   if (el.tagName === "SELECT" && el.name) { d[el.name] = el.value; return; }
   if (el.dataset && el.dataset.act === "status") { const code = el.dataset.code; await write(db => db.doc("members/" + code).update({ status: el.value })); return; }
@@ -1800,8 +1865,14 @@ document.addEventListener("change", async e => {
     const f = el.files[0];
     try {
       const [photo, hash, shot] = await Promise.all([compressImage(f), f.arrayBuffer().then(b => sha256(b)), readShotTime(f)]);
-      d.photo = photo; d.hash = hash; d.shotAt = shot;
-      d.shotNote = shot ? K(`촬영 시각: ${new Date(shot).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}`, `Taken: ${new Date(shot).toLocaleString("en-US", { timeZone: "Asia/Seoul" })}`) : K("촬영 시각 정보가 없는 이미지예요 (캡처·편집 이미지는 정상).", "No timestamp found (normal for screenshots or edited images).");
+      const live = d.method === "photo", tsv = shot || Date.now();
+      const when = new Date(tsv).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+      const nick = me() ? me().nickname : "";
+      d.photo = await stampImage(photo, `${shot ? "촬영" : "업로드"} ${when} · ${nick} · ANYWAY GREEN`);
+      d.hash = hash; d.shotAt = shot;
+      d.shotNote = shot ? K(`촬영 시각: ${when}`, `Taken: ${when}`)
+        : live ? K("촬영 시각 정보가 없는 사진이에요. 앨범 사진이면 카메라로 다시 찍어 주세요. (운영진 검수 대상)", "No timestamp found. If it's from your album, please retake it with the camera. (flagged for review)")
+        : K("업로드 시각이 이미지에 표시돼요.", "Upload time is stamped on the image.");
     } catch (err) { toast(K("이미지를 읽지 못했어요", "Couldn't read the image")); }
     render(true); return;
   }
@@ -1852,7 +1923,7 @@ async function doApply(f) {
 }
 async function doLogin(f) {
   const code = (f.elements.lcode.value || "").trim().toUpperCase(), pin = (f.elements.lpin.value || "").trim();
-  if (!S.members[code]) return toast(K("참가자 코드를 확인해 주세요", "Check your participant code"));
+  if (!/^AG-[A-Z0-9]{4}$/.test(code)) return toast(K("참가자 코드를 확인해 주세요 (예: AG-AB12)", "Check your participant code (e.g. AG-AB12)"));
   try {
     const ok = await API.login(code, await sha256(code + ":" + pin));
     if (!ok) return toast(K("PIN이 맞지 않아요", "Wrong PIN"));
@@ -1863,30 +1934,34 @@ async function doProof() {
   const d = S.draft, m = me(), c = cfg();
   if (!m || !isActive(m)) return;
   const mi = d.mission && MISSION[d.mission];
-  const method = d.method || "photo";
+  const method = d.method;
   if (!mi) return toast(K("미션을 먼저 골라 주세요", "Pick a mission first"));
+  const allowed = methodsFor(m, mi, myBuddyUsed(m, weekOfDay(d.day || today())), 99).map(x => x[0]);
+  if (!method || !allowed.includes(method)) return toast(K("이 미션에 맞는 인증 방법을 골라 주세요", "Choose a verification method for this mission"));
   if (!d.day || !canUploadFor(d.day)) return toast(K("인증할 수 있는 날짜가 아니에요", "You can't check in for that day"));
   const w = weekOfDay(d.day);
   if (Object.values(S.proofs).some(p => p.code === m.code && p.day === d.day && p.missionId === mi.id && !["rejected", "cancelled"].includes(p.status))) return toast(K("같은 미션은 하루에 한 번만 인증할 수 있어요", "One check-in per mission per day"));
-  if (["photo", "capture"].includes(method) && !d.photo) return toast(K("이미지를 올려 주세요", "Please add an image"));
+  if (IMG_METHODS.includes(method) && !d.photo) return toast(K("이미지를 올려 주세요", "Please add an image"));
   if (method === "text" && !(d.note || "").trim()) return toast(K("무엇을 했는지 적어 주세요", "Describe what you did"));
-  if (method === "text" && !m.photoHard) return;
-  if (["photo", "capture"].includes(method) && Object.values(S.proofs).some(p => p.hash && p.hash === d.hash && p.status !== "cancelled")) return toast(K("이미 올린 적 있는 이미지예요. 새로 찍어 주세요.", "This image was already used. Please take a new one."));
+  if (IMG_METHODS.includes(method) && Object.values(S.proofs).some(p => p.hash && p.hash === d.hash && p.status !== "cancelled")) return toast(K("이미 올린 적 있는 이미지예요. 새로 찍어 주세요.", "This image was already used. Please take a new one."));
   let buddy = null;
   if (method === "buddy") {
     const lim = m.photoHard ? c.buddyPerWeekUD : c.buddyPerWeek;
     if (myBuddyUsed(m, w) >= lim) return toast(K("이번 주 버디 인증 횟수를 다 썼어요", "No buddy checks left this week"));
     buddy = d.buddy || (crewMembers(m.crewId).find(x => x.code !== m.code) || {}).code;
     if (!buddy) return toast(K("확인해 줄 크루원이 없어요", "No crewmate to confirm"));
+    /* [제안] 같은 짝끼리 반복 인증 제한: 같은 크루원에게는 한 주 1회까지 */
+    const same = Object.values(S.proofs).filter(p => p.code === m.code && p.method === "buddy" && p.buddy === buddy && p.week === w && !["rejected", "cancelled"].includes(p.status)).length;
+    if (same >= 1 && !m.photoHard) return toast(K("같은 크루원에게는 한 주 1번만 확인을 부탁할 수 있어요. 다른 크루원을 골라 주세요.", "You can ask the same crewmate once a week. Pick someone else."));
   }
   const bonus = !!d.bonus && mi.tr === "S" && (m.track || m.main) !== "S" && w >= 3;
   S.busy = true; render(true);
-  const id = rid(14), hasPhoto = ["photo", "capture"].includes(method);
+  const id = rid(14), hasPhoto = IMG_METHODS.includes(method);
   const shotDay = d.shotAt ? kstDay(d.shotAt) : null;
   const ok = await write(async db => {
     if (hasPhoto) await db.doc("photos/" + id).set({ data: d.photo, code: m.code, at: Date.now() });
     await db.doc("proofs/" + id).set({ code: m.code, crewId: m.crewId, school: m.school, missionId: mi.id, tr: mi.tr, lv: mi.lv, points: missionPoints(mi, bonus), bonus,
-      method, day: d.day, week: w, hasPhoto, hash: hasPhoto ? d.hash : null, shotAt: d.shotAt || null, exifMismatch: !!(shotDay && shotDay !== d.day),
+      method, day: d.day, week: w, hasPhoto, hash: hasPhoto ? d.hash : null, shotAt: d.shotAt || null, exifMismatch: !!(shotDay && shotDay !== d.day) || (method === "photo" && !d.shotAt),
       buddy, note: (d.note || "").trim().slice(0, 300), status: method === "buddy" ? "pending" : "approved", createdAt: Date.now() });
   });
   if (ok && hasPhoto) photoCache.set(id, d.photo);
@@ -1934,7 +2009,13 @@ async function doAdminLogin(f) {
   const pw = f.elements.apw.value || "";
   if (pw.length < 4) return toast(K("비밀번호를 입력해 주세요 (4자 이상)", "Enter a password (4+ characters)"));
   try {
-    if (S.adminSetup && S.mode === "local") { await S.db.doc("config/admin").set({ hash: await sha256("admin:" + pw) }); S.adminSetup = false; }
+    if (S.adminSetup) {
+      if (pw.length < 8) return toast(K("운영자 비밀번호는 8자 이상으로 정해 주세요", "Use at least 8 characters"));
+      if (f.elements.apw2 && f.elements.apw2.value !== pw) return toast(K("비밀번호 확인이 일치하지 않아요", "Passwords don't match"));
+      if (S.mode === "supabase") { const { data, error } = await S.sb.rpc("ag_admin_setup", { pw }); if (error) throw error; if (!data) return toast(K("이미 운영자 비밀번호가 정해져 있어요", "An organizer password already exists")); }
+      else await S.db.doc("config/admin").set({ hash: await sha256("admin:" + pw) });
+      S.adminSetup = false; toast(K("운영자 비밀번호를 정했어요. 팀원에게만 공유해 주세요.", "Password set. Share it only with your team."));
+    }
     const res = await API.adminCheck(pw);
     if (res === "setup") { S.adminSetup = true; render(true); return; }
     if (!res) return toast(K("비밀번호가 맞지 않아요", "Wrong password"));
