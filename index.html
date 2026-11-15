@@ -308,9 +308,9 @@ const DEFAULT_CFG = {
   startDate: "2026-11-16",     // 파일럿 시작 (월) — 11/16~12/6, 3주
   weeks: 3,
   deadline: "2026-12-07",      // 인증 업로드 마감 (이날은 '어제 실천'만 올릴 수 있음)
-  applyStart: "2026-11-11",    // 모집 시작
-  applyDeadline: "2026-11-13", // 모집 마감 → 이후 신청은 예비 명단
-  crewReveal: "2026-11-15",    // 크루 공개 (11/14 배정)
+  applyStart: "2026-11-16",    // 모집 시작 (11/16 그린 테스트·신청)
+  applyDeadline: "2026-11-16", // 모집 마감 → 이후 신청은 예비 명단
+  crewReveal: "2026-11-16",    // 크루 공개 (11/16 배정 후 바로 시작)
   dayCap: 30, weekCap: 140,    // 포인트 상한 [가정]
   completeDays: 12,            // 평일 15일 중 12일 이상 인증 = 완주
   buddyPerWeek: 2, buddyPerWeekUD: 4, // 버디 인증 주 한도 (촬영 어려움 응답자는 상향)
@@ -513,12 +513,9 @@ const isWeekday = d => { const x = dow(d); return x >= 1 && x <= 5; };
 const mmdd = d => { const [, m, dd] = d.split("-"); return `${+m}/${+dd}`; };
 const today = () => (window.__AG_TODAY || kstDay());
 const rid = (n = 12) => { const a = "abcdefghijkmnopqrstuvwxyz23456789", r = crypto.getRandomValues(new Uint8Array(n)); return [...r].map(v => a[v % a.length]).join(""); };
-/* 참가자 코드: 기억하기 쉬운 영어 단어 + 숫자 2자리 (예: LEAF27). 20단어 × 90숫자 = 1,800개 */
-const CODE_WORDS = ["LEAF", "TREE", "MOSS", "FERN", "SEED", "RAIN", "WAVE", "MINT", "LIME", "KIWI", "PINE", "SUN", "MOON", "STAR", "BEE", "OAK", "RIVER", "CLOUD", "BLOOM", "SPROUT"];
-const codeGen = () => { const r = crypto.getRandomValues(new Uint8Array(2)); return CODE_WORDS[r[0] % CODE_WORDS.length] + (10 + (r[1] % 90)); };
-/* 입력한 코드 정리: 대문자·공백 제거, 예전 형식(AG-XXXX)도 그대로 인정 */
-const normCode = v => { const c = String(v || "").toUpperCase().replace(/[\s-]/g, ""); return /^AG[A-Z0-9]{4}$/.test(c) ? "AG-" + c.slice(2) : c; };
-const validCode = c => /^[A-Z]{3,6}\d{2}$/.test(c) || /^AG-[A-Z0-9]{4}$/.test(c);
+/* 참가자 코드: 신청할 때 본인이 직접 정함 (영문·숫자 4~12자, 영문 1자 이상). 대소문자·띄어쓰기·하이픈은 무시 */
+const normCode = v => String(v || "").toUpperCase().replace(/[\s-]/g, "");
+const validCode = c => /^[A-Z0-9]{4,12}$/.test(c) && /[A-Z]/.test(c);
 async function sha256(input) {
   const buf = typeof input === "string" ? new TextEncoder().encode(input) : new Uint8Array(input);
   if (window.crypto && crypto.subtle) {
@@ -688,7 +685,10 @@ const API = {
     if (S.mode === "supabase") {
       const { error } = await S.sb.from(CONFIG.TABLE).insert({ path: "private/" + code, col: "private", data });
       if (error) throw { code: "unavailable", message: error.message };
-    } else await S.db.doc("private/" + code).set(data);
+    } else {
+      if ((await S.db.doc("private/" + code).get()).exists) throw { code: "dup", message: "duplicate" };
+      await S.db.doc("private/" + code).set(data);
+    }
   },
   async login(code, hash) {
     if (S.mode === "supabase") {
@@ -936,7 +936,7 @@ function viewLanding() {
   const nTests = Object.keys(S.tests).length, nApply = Object.keys(S.members).length, c = cfg();
   const t = today();
   const tl = [
-    [c.applyDeadline, K(`모집 ${c.applyStart ? mmdd(c.applyStart) + "–" : "~"}${mmdd(c.applyDeadline)}`, `Sign-up ${c.applyStart ? mmdd(c.applyStart) + "–" : "until "}${mmdd(c.applyDeadline)}`)],
+    [c.applyDeadline, c.applyStart === c.applyDeadline ? K(`모집 ${mmdd(c.applyDeadline)}`, `Sign-up ${mmdd(c.applyDeadline)}`) : K(`모집 ${c.applyStart ? mmdd(c.applyStart) + "–" : "~"}${mmdd(c.applyDeadline)}`, `Sign-up ${c.applyStart ? mmdd(c.applyStart) + "–" : "until "}${mmdd(c.applyDeadline)}`)],
     [c.crewReveal, K(`크루 공개 ${mmdd(c.crewReveal)}`, `Crews revealed ${mmdd(c.crewReveal)}`)],
     [pilotStart(), K(`파일럿 ${mmdd(pilotStart())}–${mmdd(pilotEnd())}`, `Pilot ${mmdd(pilotStart())}–${mmdd(pilotEnd())}`)],
     [c.deadline, K(`인증 마감 ${mmdd(c.deadline)}`, `Check-ins close ${mmdd(c.deadline)}`)]
@@ -1160,7 +1160,8 @@ function viewApply() {
       <label class="opt"><input type="checkbox" name="mobility" ${d.mobility ? "checked" : ""}><span class="small">${K("이동이 어려워요 → 걷기 미션 대신 같은 점수의 대체 미션이 열려요", "Moving around is hard for me → same-point alternative missions instead of walking")}</span></label>
       <label class="opt"><input type="checkbox" name="photoHard" ${d.photoHard ? "checked" : ""}><span class="small">${K("사진 찍기가 어려워요 → 버디 인증 한도가 늘고 글 인증을 쓸 수 있어요", "Taking photos is hard for me → more buddy checks and text check-ins")}</span></label>
     </fieldset>
-    <label class="f">${K("PIN 4자리 (로그인용)", "4-digit PIN (for login)")}<input type="password" name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" value="${esc(d.pin || "")}" required><span class="hint">${K("신청하면 참가자 코드가 나와요. 코드 + PIN으로 다른 기기에서도 로그인해요.", "You'll get a participant code. Use code + PIN to log in on any device.")}</span></label>
+    <label class="f">${K("나의 참가자 코드 (로그인 아이디 · 직접 정하기)", "Your participant code (login ID · you choose it)")}<input type="text" name="ucode" maxlength="12" value="${esc(d.ucode || "")}" placeholder="GREENCHAE" autocapitalize="characters" autocomplete="username" spellcheck="false" style="text-transform:uppercase;font-family:var(--f-display);letter-spacing:.08em" required><span class="hint">${K("영문·숫자 4~12자 (영문 1자 이상, 예: GREENCHAE, LEAF27). 크루원에게 보일 수 있으니 학번·전화번호는 쓰지 마세요. 친구 코드와는 달라요.", "4–12 letters/numbers with at least one letter (e.g. GREENCHAE, LEAF27). Crewmates may see it, so avoid student IDs or phone numbers. This is not the friend code.")}</span></label>
+    <label class="f">${K("PIN 4자리 (로그인 비밀번호)", "4-digit PIN (login password)")}<input type="password" name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" value="${esc(d.pin || "")}" required><span class="hint">${K("참가자 코드 + PIN으로 어느 기기에서나 로그인해요.", "Log in on any device with your code + PIN.")}</span></label>
     <fieldset class="stack"><legend>${K("동의", "Consent")}</legend>
       <label class="opt"><input type="checkbox" name="agree" ${d.agree ? "checked" : ""} required><span class="small">${K("(필수) 실명·연락처를 파일럿 운영(크루 안내·리워드 지급)에만 쓰고, 파일럿 종료 후 30일 이내에 파기하는 데 동의해요. 인증 사진에는 얼굴·결제 정보가 나오지 않게 할게요.", "(Required) My name and contact are used only to run the pilot (crew notices, rewards) and deleted within 30 days after it ends. I'll keep faces and payment details out of photos.")} <button type="button" class="btn ghost sm" data-go="privacy" style="min-height:28px;padding:0 8px">${K("자세히", "Details")}</button></span></label>
       <label class="opt"><input type="checkbox" name="interview" ${d.interview ? "checked" : ""}><span class="small">${K("(선택) 파일럿 후 10~15분 인터뷰 연락을 받아도 좋아요.", "(Optional) You may contact me for a 10–15 min interview after the pilot.")}</span></label>
@@ -1192,7 +1193,7 @@ function viewLogin() {
   return `<form class="wrap narrow stack-lg" id="loginForm" novalidate style="max-width:460px">
     <h1 class="display" style="font-size:2rem">${K("참가자 로그인", "Participant login")}</h1>
     ${modeNotice()}
-    <label class="f">${K("참가자 코드", "Participant code")}<input type="text" name="lcode" value="${esc(d.lcode || "")}" placeholder="LEAF27" style="text-transform:uppercase;font-family:var(--f-display);letter-spacing:.1em" autocomplete="username"></label>
+    <label class="f">${K("참가자 코드", "Participant code")}<input type="text" name="lcode" value="${esc(d.lcode || "")}" placeholder="GREENCHAE" style="text-transform:uppercase;font-family:var(--f-display);letter-spacing:.1em" autocomplete="username" autocapitalize="characters" spellcheck="false"><span class="hint">${K("신청할 때 직접 정한 코드예요. 잊었다면 운영진에게 카카오톡으로 문의해 주세요.", "The code you chose when signing up. Forgot it? Message the organizers.")}</span></label>
     <label class="f">PIN<input type="password" name="lpin" inputmode="numeric" maxlength="4" value="" autocomplete="current-password"></label>
     <div><button class="btn primary" type="submit">${K("로그인", "Log in")}</button></div>
     <p class="small muted">${K("아직 신청하지 않았다면 그린 테스트부터 해 주세요.", "Not signed up yet? Start with the Green Test.")} <button type="button" class="btn ghost sm" data-go="test">${K("그린 테스트", "Green Test")}</button></p>
@@ -1689,7 +1690,44 @@ function adminSettings() {
       <div><button class="btn primary" type="submit">${K("저장", "Save")}</button></div></form>
     <section class="card stack"><div class="sec-h"><h2>${K("데이터 내보내기 (CSV)", "Export data (CSV)")}</h2></div>
       <div class="row">${[["members", K("참가자", "Participants")], ["tests", K("테스트·T0", "Tests & T0")], ["proofs", K("인증", "Check-ins")], ["reflections", K("성찰일지", "Reflections")], ["checkins", K("중간 체크인", "Mid check-ins")], ["t1", K("사후 T1", "Post T1")], ["tips", "Tip Exchange"], ["notify", K("발송 기록", "Send log")]].map(([k, l]) => `<button class="btn sm" data-act="export" data-v="${k}">${l}</button>`).join("")}</div>
-      <p class="hint">${K("T0·T1은 같은 참가자 코드로 연결돼요. 개인정보(실명·연락처)는 '참가자' CSV에만 들어가요.", "T0 and T1 link by participant code. Names and contacts appear only in the participants CSV.")}</p></section>`;
+      <p class="hint">${K("T0·T1은 같은 참가자 코드로 연결돼요. 개인정보(실명·연락처)는 '참가자' CSV에만 들어가요.", "T0 and T1 link by participant code. Names and contacts appear only in the participants CSV.")}</p></section>
+    <section class="card stack" style="border-color:var(--bad)"><div class="sec-h"><h2>${K("참가 데이터 전체 초기화", "Reset all participant data")}</h2></div>
+      <p class="small muted">${K(`신청자·실명/연락처·테스트 응답·크루·인증·사진·팁·설문·발송 기록·정산을 모두 지워요. 캠페인 설정(일정·공지·템플릿)과 운영자 비밀번호는 남아요. 지우기 전에 전체 백업 파일(JSON)이 자동으로 내려받아져요. 현재 신청자 ${Object.keys(S.members).length}명 · 테스트 ${Object.keys(S.tests).length}건 · 인증 ${Object.keys(S.proofs).length}건.`, `Deletes sign-ups, names/contacts, test answers, crews, check-ins, photos, tips, surveys, send logs and payouts. Settings and the organizer password stay. A full JSON backup downloads first.`)}</p>
+      <div><button class="btn sm danger" type="button" data-act="reset-all">${K("백업 후 전체 초기화", "Back up and reset")}</button></div></section>`;
+}
+/* 운영자: 참가 데이터 전체 초기화 (설정은 유지). 지우기 전에 백업 JSON을 내려받음 */
+const RESET_COLS = ["members", "crews", "proofs", "tests", "tips", "reflections", "checkins", "t1", "notify", "payouts"];
+async function resetAll() {
+  const word = K("초기화", "RESET");
+  const typed = prompt(K(`정말 모든 참가 데이터를 지울까요? 되돌릴 수 없어요.\n계속하려면 '${word}'라고 입력하세요.`, `Delete all participant data? This can't be undone.\nType '${word}' to continue.`));
+  if (typed === null) return;
+  if (typed.trim() !== word) return toast(K("입력이 달라서 취소했어요", "Cancelled"));
+  S.busy = true; toast(K("백업 중…", "Backing up…"));
+  try {
+    const priv = await API.privateAll(S.adminPw || "");
+    let photoPaths = [];
+    if (S.mode === "supabase") {
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await S.sb.from(CONFIG.TABLE).select("path").eq("col", "photos").range(from, from + 999);
+        if (error) throw error; photoPaths.push(...data.map(r => r.path)); if (data.length < 1000) break;
+      }
+    } else photoPaths = (await S.db.collection("photos").get()).docs.map(d => "photos/" + d.id);
+    const backup = { at: new Date().toISOString(), config: S.cfg, private: priv, photoCount: photoPaths.length };
+    RESET_COLS.forEach(c => { backup[c] = S[c]; });
+    download(`anyway-green-backup-${today()}.json`, JSON.stringify(backup, null, 2), "application/json");
+    const paths = [...RESET_COLS.flatMap(c => Object.keys(S[c]).map(id => c + "/" + id)), ...Object.keys(priv).map(id => "private/" + id), ...photoPaths];
+    let n = 0, fail = 0;
+    for (const p of paths) {
+      try {
+        if (S.mode === "supabase") { const { error } = await S.sb.rpc("ag_admin_delete", { pw: S.adminPw || "", p_path: p }); if (error) throw error; }
+        else await S.db.doc(p).delete();
+        n++;
+      } catch (e) { fail++; console.error(p, e); }
+    }
+    RESET_COLS.forEach(c => { S[c] = {}; }); S.priv = {}; S.sample = []; S.assignNotes = []; photoCache.clear();
+    toast(fail ? K(`${n}건 삭제 · ${fail}건 실패 (다시 눌러 주세요)`, `${n} deleted · ${fail} failed`) : K(`초기화 완료 (${n}건 삭제)`, `Reset done (${n} deleted)`));
+  } catch (e) { toast(K("초기화하지 못했어요: ", "Reset failed: ") + (e.message || "")); }
+  S.busy = false; render(true);
 }
 
 /* =====================================================================
@@ -1740,15 +1778,18 @@ function hydratePhotos() {
    ===================================================================== */
 function setPath(obj, path, val) { const ks = path.split("."); let o = obj; for (let i = 0; i < ks.length - 1; i++) o = o[ks[i]] = o[ks[i]] || {}; o[ks[ks.length - 1]] = val; }
 
+function testRecord(st) {
+  const r = st.result;
+  return st.consent
+    ? { at: Date.now(), lang, ref: refCode(), consent: true, base: st.base, t: st.t, a6: st.a6, m: st.m, p: st.p, main: r.main, sub: r.sub, level: r.level, n: r.n, score: r.score, r1: st.r1 || null }
+    : { at: Date.now(), ref: refCode(), consent: false, main: r.main, level: r.level, r1: st.r1 || null };
+}
 async function finishTest() {
   const st = S.test;
   S.busy = true; render(true);
   const r = greenResult(st.t, st.a6);
   st.result = r; st.testId = st.testId || rid(10);
-  const rec = st.consent
-    ? { at: Date.now(), lang, ref: refCode(), consent: true, base: st.base, t: st.t, a6: st.a6, m: st.m, p: st.p, main: r.main, sub: r.sub, level: r.level, n: r.n, score: r.score }
-    : { at: Date.now(), ref: refCode(), consent: false, main: r.main, level: r.level };
-  if (S.db) await write(db => db.doc("tests/" + st.testId).set(rec));
+  if (S.db) await write(db => db.doc("tests/" + st.testId).set(testRecord(st)));
   st.i = STEPS.length - 1; S.busy = false; saveTest(); render(true); window.scrollTo(0, 0);
 }
 async function shareResult() {
@@ -1808,7 +1849,7 @@ document.addEventListener("click", async e => {
   }
   else if (act === "a7") { const i = +v, arr = st.p.A7 || (st.p.A7 = []); const j = arr.indexOf(i); if (j >= 0) arr.splice(j, 1); else arr.push(i); saveTest(); render(true); }
   else if (act === "t-finish") { await finishTest(); }
-  else if (act === "r1") { st.r1 = +v; saveTest(); render(true); if (st.testId && S.tests[st.testId]) write(db => db.doc("tests/" + st.testId).update({ r1: +v })); }
+  else if (act === "r1") { st.r1 = +v; saveTest(); render(true); if (st.testId && st.result) write(db => S.tests[st.testId] ? db.doc("tests/" + st.testId).update({ r1: +v }) : db.doc("tests/" + st.testId).set(testRecord(st))); }
   else if (act === "retake") { S.test = newTest(); saveTest(); render(true); }
   else if (act === "share-result") shareResult();
   else if (act === "story-result") storyResult();
@@ -1837,7 +1878,8 @@ document.addEventListener("click", async e => {
   /* 내 정보 */
   else if (act === "logout") { store.del("ag.session"); S.me = null; S.draft = {}; toast(K("로그아웃했어요", "Logged out")); go("home"); }
   /* 운영 */
-  else if (act === "admin-tab") { S.adminTab = v; render(true); }
+  else if (act === "admin-tab") { S.adminTab = v; render(true); if (S.admin) API.privateAll(S.adminPw || "").then(p => { S.priv = p; render(); }).catch(() => {}); } // 새 신청자의 실명·연락처도 보이도록 다시 불러옴
+  else if (act === "reset-all") { if (S.admin && !S.busy) await resetAll(); }
   else if (act === "admin-out") { S.admin = false; S.adminPw = null; S.priv = {}; go("home"); }
   else if (act === "auto-assign") { const r = autoAssign(); S.draft.imp = r.csv; S.assignNotes = r.notes; render(true); toast(K("초안을 만들었어요. 확인 후 [배정 적용]을 눌러 주세요", "Draft ready. Review, then Apply")); }
   else if (act === "nfilter") { S.notifyFilter = v; render(true); }
@@ -1914,26 +1956,40 @@ async function doApply(f) {
   if (!realName || !contact) return toast(K("실명과 연락처를 입력해 주세요 (운영진만 봐요)", "Enter your name and contact (organizers only)"));
   if (!school) return toast(K("학교를 선택해 주세요", "Choose your university"));
   if (!(d.avail || []).length) return toast(K("연락 가능한 시간대를 하나 이상 골라 주세요", "Pick at least one time slot"));
+  const code = normCode(el("ucode").value);
+  if (!code) return toast(K("참가자 코드를 정해 주세요", "Choose your participant code"));
+  if (!validCode(code)) return toast(K("참가자 코드는 영문·숫자 4~12자로, 영문을 1자 이상 넣어 주세요", "Code: 4–12 letters/numbers, at least one letter"));
+  if (S.members[code]) return toast(K("이미 쓰고 있는 코드예요. 다른 코드를 정해 주세요", "That code is taken. Choose another"));
   if (!/^\d{4}$/.test(pin)) return toast(K("PIN은 숫자 4자리예요", "PIN must be 4 digits"));
   if (!el("agree").checked) return toast(K("필수 동의에 체크해 주세요", "Please tick the required consent"));
   S.busy = true; render(true);
-  let code = codeGen(); while (S.members[code]) code = codeGen();
   const status = today() > cfg().applyDeadline ? "reserve" : "applied";
   const member = { code, nickname: nick.slice(0, 14), school, lang, avail: d.avail, eng: el("eng").value, friend: (el("friend").value || "").trim().toUpperCase().slice(0, 12),
     mobility: !!el("mobility").checked, photoHard: !!el("photoHard").checked, interview: !!el("interview").checked,
     main: r.main, sub: r.sub, level: r.level, track: r.main, testId: S.test.testId, ref: refCode(), status, crewId: null, hideRank: false, createdAt: Date.now() };
   const pinHash = await sha256(code + ":" + pin);
-  let ok = await write(async db => {
-    await API.insertPrivate(code, { realName, contact, pinHash, at: Date.now() });
-    await db.doc("members/" + code).set(member);
-  });
-  if (ok && S.test.testId && S.tests[S.test.testId] && S.tests[S.test.testId].consent) await write(db => db.doc("tests/" + S.test.testId).update({ code }));
+  /* 개인정보 먼저 저장 — 같은 코드가 이미 있으면 DB가 거절함(중복 방지). 지난 시도에서 개인정보만 저장되고 끊긴 경우(같은 코드+PIN)는 이어서 진행 */
+  try { await API.insertPrivate(code, { realName, contact, pinHash, at: Date.now() }); }
+  catch (err) {
+    const dup = /duplicate|unique|exists|23505/i.test((err && err.message) || "") || (err && err.code === "dup");
+    let mine = false;
+    if (dup) { try { mine = await API.login(code, pinHash); } catch (x) {} }
+    if (!mine) {
+      S.busy = false; render(true);
+      return toast(dup ? K("이미 쓰고 있는 코드예요. 다른 코드를 정해 주세요", "That code is taken. Choose another") : K("저장하지 못했어요. 잠시 후 다시 시도해 주세요.", "Couldn't save. Please try again."));
+    }
+  }
+  let ok = await write(db => db.doc("members/" + code).set(member));
+  /* 테스트 기록이 DB에 없으면(초기화 이전에 한 테스트 등) 이 브라우저에 남은 응답으로 다시 저장 */
+  if (ok && S.test.testId && !S.tests[S.test.testId]) await write(db => db.doc("tests/" + S.test.testId).set({ ...testRecord(S.test), code: S.test.consent ? code : undefined }));
+  else if (ok && S.test.testId && S.tests[S.test.testId] && S.tests[S.test.testId].consent) await write(db => db.doc("tests/" + S.test.testId).update({ code }));
   S.busy = false;
   if (ok) { S.me = code; store.set("ag.session", code); S.draft = {}; toast(K("신청 완료!", "Signed up!")); go("applied"); } else render(true);
 }
 async function doLogin(f) {
   const code = normCode(f.elements.lcode.value), pin = (f.elements.lpin.value || "").trim();
-  if (!validCode(code)) return toast(K("참가자 코드를 확인해 주세요 (예: LEAF27)", "Check your participant code (e.g. LEAF27)"));
+  if (!validCode(code)) return toast(K("참가자 코드를 확인해 주세요 (신청할 때 직접 정한 영문·숫자 코드)", "Check your participant code (the one you chose when signing up)"));
+  if (!/^\d{4}$/.test(pin)) return toast(K("PIN 4자리를 입력해 주세요", "Enter your 4-digit PIN"));
   try {
     const ok = await API.login(code, await sha256(code + ":" + pin));
     if (!ok) return toast(K("PIN이 맞지 않아요", "Wrong PIN"));
@@ -2035,8 +2091,36 @@ async function doAdminLogin(f) {
 /* 자동 배정 초안 — 파일럿 운영안의 배정 규칙 6가지를 순서대로 적용 (사람이 확인 후 적용) */
 function autoAssign() {
   const notes = [];
-  const pool = Object.values(S.members).filter(m => ["applied", "active", "contact"].includes(m.status));
-  if (!pool.length) { notes.push(K("배정할 신청자가 없어요 (상태가 신청·활동·연락 중인 사람만 대상)", "No one to assign")); return { csv: "", notes }; }
+  const all = Object.values(S.members).filter(m => ["applied", "active", "contact"].includes(m.status));
+  /* 이미 크루가 있는 사람은 그대로 두고, 아직 크루가 없는 사람만 배정 (진행 중인 크루를 다시 섞지 않음) */
+  const placed = all.filter(m => m.crewId && S.crews[m.crewId]);
+  let pool = all.filter(m => !(m.crewId && S.crews[m.crewId]));
+  if (!pool.length) { notes.push(K("새로 배정할 사람이 없어요 (상태가 신청·활동·연락 중이면서 크루가 없는 사람만 대상. 예비 명단은 상태를 '신청'으로 바꾸면 포함돼요)", "No one new to assign")); return { csv: "", notes }; }
+  const rows0 = [["code", "crew_id", "crew_name", "track", "nickname", "school", "avail", "eng", "friend"]];
+  if (placed.length) {
+    /* 기존 크루가 있으면: 메인 → 찰떡 Track 순으로 자리가 있는(5명 미만) 기존 크루 중 가장 작은 크루에 추가 */
+    const size = id => placed.filter(x => x.crewId === id).length + rows0.filter(r => r[1] === id).length;
+    const rest = [];
+    for (const m of pool) {
+      const fit = tr => Object.entries(S.crews).filter(([id, c]) => c.track === tr && size(id) < 5 && (!m.friend || placed.concat(pool).filter(x => x.friend === m.friend && (x.crewId === id || rows0.some(r => r[0] === x.code && r[1] === id))).length < 2)).sort((a, b) => size(a[0]) - size(b[0]))[0];
+      const hit = fit(m.main) || (m.sub && fit(m.sub));
+      if (hit) { const [id, c] = hit; rows0.push([m.code, id, c.name, c.track, m.nickname, m.school, (m.avail || []).join("|"), m.eng, m.friend || ""]); if (c.track !== m.main) notes.push(K(`${m.nickname}: 메인(${m.main}) 크루에 자리가 없어 찰떡 Track(${c.track}) 크루 ${c.name}에 넣었어요`, `${m.nickname}: placed in sub-track crew ${c.name}`)); }
+      else rest.push(m);
+    }
+    /* 남은 인원이 3명 미만이면 새 크루를 만들지 않고 Track과 상관없이 자리가 있는 가장 작은 기존 크루에 넣음 */
+    if (rest.length && rest.length < 3) {
+      for (const m of rest.splice(0)) {
+        const hit = Object.entries(S.crews).filter(([id]) => size(id) < 5 && placed.some(x => x.crewId === id)).sort((a, b) => size(a[0]) - size(b[0]))[0];
+        if (!hit) { rest.push(m); continue; }
+        const [id, c] = hit; rows0.push([m.code, id, c.name, c.track, m.nickname, m.school, (m.avail || []).join("|"), m.eng, m.friend || ""]);
+        notes.push(K(`${m.nickname}: 같은 Track 크루가 없어 ${c.name}(${c.track})에 넣었어요 — 미션은 크루 Track(${c.track}) 기준으로 바뀌어요`, `${m.nickname}: no same-track crew, placed in ${c.name}`));
+      }
+    }
+    notes.push(K(`기존 크루는 그대로 두고 새 신청자 ${pool.length}명 중 ${pool.length - rest.length}명을 기존 크루에 넣었어요.`, `Kept existing crews; added ${pool.length - rest.length} of ${pool.length} newcomers.`));
+    if (!rest.length) return { csv: rows0.map(r => r.map(x => /[",\n]/.test(String(x)) ? `"${String(x).replace(/"/g, '""')}"` : x).join(",")).join("\n"), notes };
+    notes.push(K(`남은 ${rest.length}명은 새 크루로 묶었어요: ${rest.map(m => m.nickname).join(", ")}`, `${rest.length} put into new crews`));
+    pool = rest;
+  }
   // ② 같은 Track, 3명 미만이면 찰떡 크루(sub) Track으로
   const tr = new Map(pool.map(m => [m.code, m.main]));
   const count = () => { const c = {}; tr.forEach(t => { c[t] = (c[t] || 0) + 1; }); return c; };
@@ -2048,7 +2132,7 @@ function autoAssign() {
   Object.entries(c1).forEach(([t, n]) => { if (n < 3 && t !== biggest) { pool.filter(m => tr.get(m.code) === t).forEach(m => tr.set(m.code, biggest)); notes.push(K(`${TRACKS[t].code} 인원이 적어 ${TRACKS[biggest].code} 크루로 합쳤어요`, `${TRACKS[t].code} too small, merged into ${TRACKS[biggest].code}`)); } });
   const moved = pool.filter(m => tr.get(m.code) !== m.main);
   if (moved.length) notes.push(K(`메인 Track과 다르게 배정: ${moved.map(m => `${m.nickname}(${m.main}→${tr.get(m.code)})`).join(", ")}`, `Moved from main track: ${moved.map(m => m.nickname).join(", ")}`));
-  const rows = [["code", "crew_id", "crew_name", "track", "nickname", "school", "avail", "eng", "friend"]];
+  const rows = rows0;
   const groups = {}; pool.forEach(m => (groups[tr.get(m.code)] = groups[tr.get(m.code)] || []).push(m));
   for (const [t, ms] of Object.entries(groups)) {
     const n = ms.length, k = Math.max(1, Math.ceil(n / 5));
@@ -2065,7 +2149,10 @@ function autoAssign() {
       const cr = crews.find(c => ok(c, m) && c.some(x => x.eng === "both")) || crews.slice().sort((a, b) => a.length - b.length)[0];
       cr.push(m); if (!cr.some(x => x.eng === "both")) notes.push(K(`${m.nickname}: 영어 가능 크루원이 없는 크루에 배정됨`, `${m.nickname}: no English helper in crew`));
     }
-    crews.forEach((cr, j) => {
+    let next = 1;
+    crews.filter(cr => cr.length).forEach(cr => {
+      while (S.crews[`${t}${next}`]) next++; // 이미 있는 크루 번호는 건너뜀
+      const j = next - 1; next++;
       const id = `${t}${j + 1}`, name = `${TRACKS[t].code} ${j + 1}${K("크루", " Crew")}`;
       if (new Set(cr.map(m => m.school)).size < 2 && cr.length > 1) notes.push(K(`${name}: 학교가 한 곳뿐이에요 (규칙 ③)`, `${name}: only one university`));
       if (k > 1 && cr.length < 4) notes.push(K(`${name}: ${cr.length}명이에요 (기준 4~5명)`, `${name}: ${cr.length} people`));
