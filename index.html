@@ -1622,6 +1622,7 @@ function adminAssign() {
       <label class="f">${K("CSV 파일", "CSV file")}<input type="file" id="imp_file" accept=".csv,text/csv"></label>
       <label class="f">${K("또는 붙여넣기 (code, crew_id, crew_name, track 열 필요 · track은 C/S/W/D, 비우면 첫 멤버의 메인 유형)", "Or paste (needs code, crew_id, crew_name, track columns · track C/S/W/D, blank = first member's main type)")}<textarea name="imp" style="min-height:120px;font-family:monospace">${esc(S.draft.imp || "")}</textarea></label>
       <div><button class="btn primary" type="submit">${K("배정 적용 (상태 → 활동)", "Apply (status → active)")}</button></div></form>
+    ${crewViewHTML(ms)}
     ${testTakersHTML()}
     <section class="card stack"><div class="sec-h"><h2>${K("신청자", "Sign-ups")} (${ms.length})</h2></div>
       ${autoN ? `<p class="small muted">${K(`'자동'은 테스트만 마치고 자동 등록된 사람 ${autoN}명이에요. 크루 배정·카톡 초대는 똑같이 할 수 있고, 미션 인증은 본인이 [파일럿 신청]에서 닉네임·로그인 코드·PIN을 만든 뒤부터 가능해요(배정된 크루는 그대로 이어져요).`, `'Auto' = ${autoN} people signed up by finishing the test. You can assign and invite them; they can check in after setting a login via Join the pilot (crew carries over).`)}</p>` : ""}
@@ -1629,6 +1630,33 @@ function adminAssign() {
       ${ms.map(m => `<tr><td class="num">${m.auto ? `<span class="pill" title="${K("테스트만 완료 — 로그인 코드 미설정", "Test only — no login yet")}">${K("자동", "Auto")}</span>` : esc(m.code)}</td><td>${esc(m.nickname)}${dupPhone[(S.priv[m.code] || {}).contact] > 1 ? ` <span class="pill warn">${K("번호 중복", "Dup phone")}</span>` : ""}</td><td>${esc((S.priv[m.code] || {}).realName || "–")}</td><td class="num">${esc((S.priv[m.code] || {}).contact || "–")}</td><td>${esc(m.school)}</td><td>${m.main}/${m.sub}</td><td>${(m.avail || []).map(a => AV[a] || a).join(",")}</td><td>${esc(m.eng)}</td><td>${esc(m.friend || "")}</td><td>${m.mobility ? K("이동", "Mob") : ""}${m.photoHard ? " " + K("촬영", "Photo") : ""}</td><td>${esc(m.crewId && S.crews[m.crewId] ? S.crews[m.crewId].name : "–")}</td>
         <td><select data-act="status" data-code="${esc(m.code)}" aria-label="${K("상태", "Status")}">${Object.entries(STATUS_L).map(([k, l]) => `<option value="${k}" ${m.status === k ? "selected" : ""}>${P2(l)}</option>`).join("")}</select></td></tr>`).join("")}
       </tbody></table></div></section>`;
+}
+/* 운영자: 크루별 신청자 보기 (실명·전화번호 포함) + 카톡방용 번호 복사 */
+function crewMemberList(ms, id) { return ms.filter(m => id ? m.crewId === id : !(m.crewId && S.crews[m.crewId])); }
+function crewViewHTML(ms) {
+  const AV = { wd_day: K("평일낮", "WD day"), wd_eve: K("평일저녁", "WD eve"), we: K("주말", "Wknd") };
+  const ENG = { ko: K("한국어", "Korean"), en: K("영어 필요", "Needs EN"), both: K("둘 다", "Both") };
+  const live = ms.filter(m => m.status !== "replaced");
+  const crewIds = Object.keys(S.crews).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const block = (id, title, sub) => {
+    const list = crewMemberList(live, id);
+    if (!id && !list.length) return "";
+    return `<div class="card stack" style="padding:14px">
+      <div class="sec-h"><h3 style="font-size:1rem;margin:0">${esc(title)} <span class="muted small">· ${list.length}${K("명", "")}</span></h3>
+        ${list.length ? `<button class="btn sm" type="button" data-act="copy-crew" data-v="${esc(id || "")}">${K("이름·번호 복사", "Copy names & phones")}</button>` : ""}</div>
+      ${sub ? `<p class="small muted" style="margin:0">${sub}</p>` : ""}
+      ${list.length ? `<div class="tbl"><table><thead><tr><th>${K("실명", "Name")}</th><th>${K("전화번호", "Phone")}</th><th>${K("닉네임", "Nickname")}</th><th>${K("코드", "Code")}</th><th>${K("학교", "Univ.")}</th><th>${K("메인/찰떡", "Main/sub")}</th><th>${K("언어", "Lang")}</th><th>${K("시간대", "Hours")}</th><th>${K("상태", "Status")}</th><th>${K("누적", "Pts")}</th></tr></thead><tbody>
+      ${list.map(m => { const pv = S.priv[m.code] || {};
+        return `<tr><td>${esc(pv.realName || "–")}</td><td class="num">${esc(pv.contact || "–")}</td><td>${esc(m.nickname)}</td><td class="num">${m.auto ? `<span class="pill">${K("자동", "Auto")}</span>` : esc(m.code)}</td><td>${esc(m.school || "–")}</td><td>${m.main}/${m.sub || ""}</td><td>${ENG[m.eng] || esc(m.eng || "")}</td><td>${(m.avail || []).map(a => AV[a] || a).join(",")}</td><td>${P2(STATUS_L[m.status] || [m.status, m.status])}</td><td class="num">${pts(m.code)}</td></tr>`; }).join("")}
+      </tbody></table></div>` : `<p class="small muted">${K("아직 크루원이 없어요.", "No members yet.")}</p>`}
+    </div>`;
+  };
+  return `<section class="card stack"><div class="sec-h"><h2>${K("크루별 보기", "By crew")} (${crewIds.length}${K("개 크루", " crews")})</h2><button class="btn sm" type="button" data-act="export" data-v="bycrew">${K("크루별 CSV", "CSV by crew")}</button></div>
+    <p class="small muted">${K("[이름·번호 복사]를 누르면 크루원 이름과 전화번호가 줄마다 복사돼요. 카카오톡 단체방을 만들 때 붙여 넣어 쓰세요. '교체됨' 상태는 빠져요.", "Copy names and phones per crew for the KakaoTalk group. 'Replaced' members are excluded.")}</p>
+    ${crewIds.length ? crewIds.map(id => { const c = S.crews[id], list = crewMemberList(live, id);
+      return block(id, `${c.name} · ${TRACKS[c.track] ? L(TRACKS[c.track]) : c.track}`, [...new Set(list.map(m => m.school).filter(Boolean))].join(" · ")); }).join("") : `<p class="small muted">${K("아직 배정된 크루가 없어요. 위에서 [자동 배정 초안 만들기] → [배정 적용]을 하면 여기에 크루별로 보여요.", "No crews yet.")}</p>`}
+    ${block(null, K("미배정", "Unassigned"), K("크루가 아직 없는 신청자예요 (예비 포함).", "Sign-ups without a crew (incl. waitlist)."))}
+  </section>`;
 }
 /* 운영자: 그린 테스트 참여자 전체 (이름·전화번호는 운영진 전용 칸에서) + 신청 여부 */
 function testTakersHTML() {
@@ -1940,6 +1968,11 @@ document.addEventListener("click", async e => {
   else if (act === "logout") { store.del("ag.session"); S.me = null; S.draft = {}; toast(K("로그아웃했어요", "Logged out")); go("home"); }
   /* 운영 */
   else if (act === "admin-tab") { S.adminTab = v; render(true); if (S.admin) API.privateAll(S.adminPw || "").then(p => { S.priv = p; render(); }).catch(() => {}); } // 새 신청자의 실명·연락처도 보이도록 다시 불러옴
+  else if (act === "copy-crew") {
+    const list = crewMemberList(Object.values(S.members).filter(m => m.status !== "replaced"), v || null);
+    const head = v && S.crews[v] ? S.crews[v].name : K("미배정", "Unassigned");
+    copyText(head + "\n" + list.map(m => { const pv = S.priv[m.code] || {}; return `${pv.realName || m.nickname} ${pv.contact || "-"}`; }).join("\n"));
+  }
   else if (act === "register-takers") { if (S.admin && !S.busy) { S.busy = true; await registerTakers(); S.busy = false; } }
   else if (act === "reset-all") { if (S.admin && !S.busy) await resetAll(); }
   else if (act === "admin-out") { S.admin = false; S.adminPw = null; S.priv = {}; go("home"); }
@@ -2332,6 +2365,12 @@ function exportCSV(kind) {
   } else if (kind === "tips") {
     rows = [["crew", "code", "title", "text", "likes", "at"]];
     Object.values(S.tips).forEach(x => rows.push([S.crews[x.crewId] ? S.crews[x.crewId].name : x.crewId, x.code, x.title, x.text, (x.likes || []).length, new Date(x.createdAt).toISOString()]));
+  } else if (kind === "bycrew") {
+    rows = [["crew_id", "crew_name", "track", "name", "phone", "nickname", "code", "school", "main", "sub", "eng", "avail", "status", "points"]];
+    ms.filter(m => m.status !== "replaced").sort((a, b) => String(a.crewId || "~").localeCompare(String(b.crewId || "~"), undefined, { numeric: true })).forEach(m => {
+      const c = m.crewId && S.crews[m.crewId];
+      rows.push([c ? m.crewId : "", c ? c.name : K("미배정", "Unassigned"), c ? c.track : "", (P[m.code] || {}).realName || "", (P[m.code] || {}).contact || "", m.nickname, m.auto ? "" : m.code, m.school, m.main, m.sub || "", m.eng, (m.avail || []).join("|"), m.status, pts(m.code)]);
+    });
   } else if (kind === "contacts") {
     /* 그린 테스트를 마친 사람 전체의 이름·전화번호 (신청 여부·크루 함께) — 카카오톡 단체방 개설용 */
     const byTest = {}; ms.forEach(m => { if (m.testId) byTest[m.testId] = m; });
