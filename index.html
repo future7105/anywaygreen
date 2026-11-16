@@ -1631,6 +1631,41 @@ function adminAssign() {
         <td><select data-act="status" data-code="${esc(m.code)}" aria-label="${K("상태", "Status")}">${Object.entries(STATUS_L).map(([k, l]) => `<option value="${k}" ${m.status === k ? "selected" : ""}>${P2(l)}</option>`).join("")}</select></td></tr>`).join("")}
       </tbody></table></div></section>`;
 }
+/* 크루 배정 안내 메시지 (11/16 팀 문구 그대로). {} 칸은 사람마다 바뀜 */
+const WELCOME_KO = `{닉네임}님, 어차피그린 파일럿에 함께하게 되었어요! 🌱
+✔ 내 트랙: {트랙} ({결과카드명})
+✔ 내 크루: {크루명} (총 {N}명, {대학명} 연합)
+✔ 시작: 11/17(화)
+아래 링크로 크루 단톡방에 입장해 주세요
+👉 {링크}
+※ 랭킹은 닉네임으로만 공개되고, 본명은 공개되지 않아요.`;
+const WELCOME_EN = `Hey {Nickname}! You're officially part of the Anyway Green Pilot! 🌱
+✔ My Track: {Track} ({Result Card Name})
+✔ My Crew: {Crew Name} ({N} members, {University} Alliance)
+✔ Starts: November 17 (Tue)
+Join your crew's group chat through the link below!
+👉 {Link}
+※ Rankings will be displayed using nicknames only. Your real name will remain private.`;
+const SCHOOL_SHORT = { "충남대학교": ["충남대", "Chungnam Nat'l Univ."], "고려대학교 세종캠퍼스": ["고려대 세종", "Korea Univ. Sejong"], "단국대학교 죽전캠퍼스": ["단국대 죽전", "Dankook Univ. Jukjeon"] };
+const crewLive = id => Object.values(S.members).filter(m => m.crewId === id && m.status !== "replaced");
+function welcomeMsg(m) {
+  const c = S.crews[m.crewId]; if (!c) return "";
+  const t = TRACKS[c.track] ? c.track : m.main, mates = crewLive(m.crewId);
+  const sch = [...new Set(mates.map(x => x.school).filter(Boolean))];
+  const pv = S.priv[m.code] || {}, nick = m.auto ? (pv.realName || m.nickname) : m.nickname;
+  const link = c.chatLink || K("(단톡방 링크)", "(group chat link)");
+  const ko = WELCOME_KO.replace("{대학명} 연합", sch.length > 1 ? "{대학명} 연합" : "{대학명}")
+    .replace("{닉네임}", nick).replace("{트랙}", TRACKS[t].code).replace("{결과카드명}", TRACKS[t].ko).replace("{크루명}", c.name)
+    .replace("{N}", mates.length).replace("{대학명}", sch.map(x => (SCHOOL_SHORT[x] || [x])[0]).join("·")).replace("{링크}", link);
+  const en = WELCOME_EN.replace("{University} Alliance", sch.length > 1 ? "{University} Alliance" : "{University}")
+    .replace("{Nickname}", nick).replace("{Track}", TRACKS[t].code).replace("{Result Card Name}", TRACKS[t].en).replace("{Crew Name}", c.name)
+    .replace("{N}", mates.length).replace("{University}", sch.map(x => (SCHOOL_SHORT[x] || [x, x])[1]).join(" · ")).replace("{Link}", link);
+  return m.eng === "en" ? en : m.eng === "both" ? ko + "\n\n" + en : ko; // 영어 필요 → 영어만, 둘 다 → 한·영, 한국어 → 한국어
+}
+async function markWelcomed(m) {
+  const c = S.crews[m.crewId]; if (!c) return;
+  await write(db => db.doc("crews/" + m.crewId).update({ welcomed: { ...(c.welcomed || {}), [m.code]: Date.now() } }));
+}
 /* 운영자: 크루별 신청자 보기 (실명·전화번호 포함) + 카톡방용 번호 복사 */
 function crewMemberList(ms, id) { return ms.filter(m => id ? m.crewId === id : !(m.crewId && S.crews[m.crewId])); }
 function crewViewHTML(ms) {
@@ -1645,14 +1680,19 @@ function crewViewHTML(ms) {
       <div class="sec-h"><h3 style="font-size:1rem;margin:0">${esc(title)} <span class="muted small">· ${list.length}${K("명", "")}</span></h3>
         ${list.length ? `<button class="btn sm" type="button" data-act="copy-crew" data-v="${esc(id || "")}">${K("이름·번호 복사", "Copy names & phones")}</button>` : ""}</div>
       ${sub ? `<p class="small muted" style="margin:0">${sub}</p>` : ""}
-      ${list.length ? `<div class="tbl"><table><thead><tr><th>${K("실명", "Name")}</th><th>${K("전화번호", "Phone")}</th><th>${K("닉네임", "Nickname")}</th><th>${K("코드", "Code")}</th><th>${K("학교", "Univ.")}</th><th>${K("메인/찰떡", "Main/sub")}</th><th>${K("언어", "Lang")}</th><th>${K("시간대", "Hours")}</th><th>${K("상태", "Status")}</th><th>${K("누적", "Pts")}</th></tr></thead><tbody>
+      ${id ? `<div class="row" style="gap:8px;align-items:flex-end"><label class="f" style="flex:1;min-width:200px;margin:0">${K("크루 단톡방 링크 (안내 메시지 {링크}에 들어가요)", "Crew group chat link (fills {Link})")}<input type="url" name="chat_${esc(id)}" value="${esc(S.draft["chat_" + id] != null ? S.draft["chat_" + id] : (S.crews[id].chatLink || ""))}" placeholder="https://open.kakao.com/o/..."></label><button class="btn sm" type="button" data-act="save-chat" data-v="${esc(id)}">${K("링크 저장", "Save link")}</button></div>
+        ${S.crews[id].chatLink ? "" : `<p class="small" style="margin:0;color:var(--warn)">${K("링크를 저장해야 안내 메시지에 들어가요.", "Save the link to include it in messages.")}</p>`}` : ""}
+      ${list.length ? `<div class="tbl"><table><thead><tr>${id ? `<th>${K("안내 메시지", "Welcome")}</th>` : ""}<th>${K("실명", "Name")}</th><th>${K("전화번호", "Phone")}</th><th>${K("닉네임", "Nickname")}</th><th>${K("코드", "Code")}</th><th>${K("학교", "Univ.")}</th><th>${K("메인/찰떡", "Main/sub")}</th><th>${K("언어", "Lang")}</th><th>${K("시간대", "Hours")}</th><th>${K("상태", "Status")}</th><th>${K("누적", "Pts")}</th></tr></thead><tbody>
       ${list.map(m => { const pv = S.priv[m.code] || {};
-        return `<tr><td>${esc(pv.realName || "–")}</td><td class="num">${esc(pv.contact || "–")}</td><td>${esc(m.nickname)}</td><td class="num">${m.auto ? `<span class="pill">${K("자동", "Auto")}</span>` : esc(m.code)}</td><td>${esc(m.school || "–")}</td><td>${m.main}/${m.sub || ""}</td><td>${ENG[m.eng] || esc(m.eng || "")}</td><td>${(m.avail || []).map(a => AV[a] || a).join(",")}</td><td>${P2(STATUS_L[m.status] || [m.status, m.status])}</td><td class="num">${pts(m.code)}</td></tr>`; }).join("")}
+        const sent = id && (S.crews[id].welcomed || {})[m.code], ph = phoneDigits(pv.contact);
+        const sendCell = id ? `<td style="white-space:nowrap"><button class="btn sm ${sent ? "" : "primary"}" type="button" data-act="welcome-copy" data-code="${esc(m.code)}">${sent ? "✓ " : ""}${K("복사", "Copy")}</button> ${ph ? `<a class="btn sm" href="sms:${ph}?&body=${encodeURIComponent(welcomeMsg(m))}" data-act="welcome-sms" data-code="${esc(m.code)}">${K("문자", "SMS")}</a>` : ""}${sent ? `<div class="small muted">${new Date(sent).getMonth() + 1}/${new Date(sent).getDate()} ${String(new Date(sent).getHours()).padStart(2, "0")}:${String(new Date(sent).getMinutes()).padStart(2, "0")}</div>` : ""}</td>` : "";
+        return `<tr>${sendCell}<td>${esc(pv.realName || "–")}</td><td class="num">${esc(pv.contact || "–")}</td><td>${esc(m.nickname)}</td><td class="num">${m.auto ? `<span class="pill">${K("자동", "Auto")}</span>` : esc(m.code)}</td><td>${esc(m.school || "–")}</td><td>${m.main}/${m.sub || ""}</td><td>${ENG[m.eng] || esc(m.eng || "")}</td><td>${(m.avail || []).map(a => AV[a] || a).join(",")}</td><td>${P2(STATUS_L[m.status] || [m.status, m.status])}</td><td class="num">${pts(m.code)}</td></tr>`; }).join("")}
       </tbody></table></div>` : `<p class="small muted">${K("아직 크루원이 없어요.", "No members yet.")}</p>`}
     </div>`;
   };
   return `<section class="card stack"><div class="sec-h"><h2>${K("크루별 보기", "By crew")} (${crewIds.length}${K("개 크루", " crews")})</h2><button class="btn sm" type="button" data-act="export" data-v="bycrew">${K("크루별 CSV", "CSV by crew")}</button></div>
-    <p class="small muted">${K("[이름·번호 복사]를 누르면 크루원 이름과 전화번호가 줄마다 복사돼요. 카카오톡 단체방을 만들 때 붙여 넣어 쓰세요. '교체됨' 상태는 빠져요.", "Copy names and phones per crew for the KakaoTalk group. 'Replaced' members are excluded.")}</p>
+    <p class="small muted">${K("[이름·번호 복사]를 누르면 크루원 이름과 전화번호가 줄마다 복사돼요. '교체됨' 상태는 빠져요.", "Copy names and phones per crew. 'Replaced' members are excluded.")}</p>
+    <div class="notice small"><b>${K("크루 배정 안내 메시지", "Crew welcome message")}</b><br>${K("① 크루마다 단톡방 링크를 넣고 [링크 저장] ② 사람마다 [복사]를 눌러 카톡 1:1 대화에 붙여 넣기, 또는 [문자]를 누르면 휴대폰 문자 앱이 번호·내용이 채워진 채로 열려요(휴대폰에서 운영자 화면을 열었을 때). 닉네임·트랙·결과카드명·크루명·인원·대학·링크는 사람마다 자동으로 바뀌고, 영어 필요자는 영어, '둘 다'는 한·영 함께 보내져요. 보낸 사람에는 ✓와 시각이 남아요.", "① Save each crew's chat link ② per person, Copy and paste into a KakaoTalk chat, or tap SMS to open your phone's messaging app pre-filled. Placeholders fill in automatically; 'needs English' gets English, 'both' gets KO+EN. Sent rows get a ✓.")}</div>
     ${crewIds.length ? crewIds.map(id => { const c = S.crews[id], list = crewMemberList(live, id);
       return block(id, `${c.name} · ${TRACKS[c.track] ? L(TRACKS[c.track]) : c.track}`, [...new Set(list.map(m => m.school).filter(Boolean))].join(" · ")); }).join("") : `<p class="small muted">${K("아직 배정된 크루가 없어요. 위에서 [자동 배정 초안 만들기] → [배정 적용]을 하면 여기에 크루별로 보여요.", "No crews yet.")}</p>`}
     ${block(null, K("미배정", "Unassigned"), K("크루가 아직 없는 신청자예요 (예비 포함).", "Sign-ups without a crew (incl. waitlist)."))}
@@ -1968,6 +2008,14 @@ document.addEventListener("click", async e => {
   else if (act === "logout") { store.del("ag.session"); S.me = null; S.draft = {}; toast(K("로그아웃했어요", "Logged out")); go("home"); }
   /* 운영 */
   else if (act === "admin-tab") { S.adminTab = v; render(true); if (S.admin) API.privateAll(S.adminPw || "").then(p => { S.priv = p; render(); }).catch(() => {}); } // 새 신청자의 실명·연락처도 보이도록 다시 불러옴
+  else if (act === "welcome-copy") { const m = S.members[a.dataset.code]; if (m && await copyText(welcomeMsg(m))) { await markWelcomed(m); render(true); } }
+  else if (act === "welcome-sms") { const m = S.members[a.dataset.code]; if (m) { await markWelcomed(m); render(true); } } // 문자 앱은 링크 기본 동작으로 열림
+  else if (act === "save-chat") {
+    const inp = document.querySelector(`[name="chat_${CSS.escape(v)}"]`);
+    const val = (inp ? inp.value : (S.draft["chat_" + v] || "")).trim();
+    if (val && !/^https?:\/\//.test(val)) return toast(K("https://로 시작하는 링크를 넣어 주세요", "Enter a link starting with https://"));
+    if (await write(db => db.doc("crews/" + v).update({ chatLink: val }))) { delete S.draft["chat_" + v]; toast(K("링크를 저장했어요", "Link saved")); render(true); }
+  }
   else if (act === "copy-crew") {
     const list = crewMemberList(Object.values(S.members).filter(m => m.status !== "replaced"), v || null);
     const head = v && S.crews[v] ? S.crews[v].name : K("미배정", "Unassigned");
@@ -2316,7 +2364,7 @@ async function doImport() {
     const c = crews[cid], tcode = Object.keys(TRACKS).find(k => TRACKS[k].code === c.track) || c.track;
     const track = TORDER.includes(tcode) ? tcode : S.members[c.codes[0]].main;
     const ok = await write(async db => {
-      await db.doc("crews/" + cid).set({ name: c.name, track, createdAt: Date.now() });
+      await db.doc("crews/" + cid).set({ ...(S.crews[cid] || {}), name: c.name, track, createdAt: (S.crews[cid] && S.crews[cid].createdAt) || Date.now() }); // 단톡방 링크·안내 발송 기록 유지
       for (const code of c.codes) await db.doc("members/" + code).update({ crewId: cid, status: "active", track });
     });
     if (ok) n += c.codes.length;
