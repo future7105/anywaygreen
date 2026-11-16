@@ -1055,7 +1055,7 @@ function viewTest() {
         <p class="meta" style="margin-top:4px">${K("약 <b>6분</b> · 5개 파트 · 결과 카드 <b>무료</b>", "About <b>6 min</b> · 5 parts · Result card <b>free</b>")}</p>
       </div>
       <div class="card stack">
-        ${[[K("기본 정보", "About you"), K("20초", "20 sec")], [K("그린 테스트 12문항", "12 Green Test questions"), K("2분", "2 min")], [K("알고 보니 이미 그린 (12행)", "Already green? (12 rows)"), K("1분", "1 min")], [K("지금 나의 생활", "Your life now"), K("2분", "2 min")], [K("참여·보상", "Taking part"), K("40초", "40 sec")]]
+        ${[[K("기본 정보·연락처", "About you"), K("40초", "40 sec")], [K("그린 테스트 12문항", "12 Green Test questions"), K("2분", "2 min")], [K("알고 보니 이미 그린 (12행)", "Already green? (12 rows)"), K("1분", "1 min")], [K("지금 나의 생활", "Your life now"), K("2분", "2 min")], [K("참여·보상", "Taking part"), K("40초", "40 sec")]]
           .map(([a, b], i) => `<div class="row" style="justify-content:space-between"><span><span class="num muted">0${i}</span>&nbsp; ${a}</span><span class="small muted">${b}</span></div>`).join("")}
       </div>
       <label class="opt"><input type="checkbox" data-act="consent" ${st.consent ? "checked" : ""}><span class="small">${K("응답을 캠페인 연구용 익명 데이터(사전조사 T0)로 활용하는 데 동의해요. (선택 — 동의하지 않아도 결과는 그대로 나오고, 완료 여부와 유형만 익명으로 집계돼요)", "I agree my answers can be used as anonymous research data (baseline T0). Optional — you still get your result; only completion and type are counted anonymously.")}</span></label>
@@ -1070,6 +1070,11 @@ function viewTest() {
     const ok = b.A1 && b.A2 != null && b.A3 != null;
     return `<div class="wrap narrow stack-lg">${head}
       <h1 style="font-size:1.5rem">${K("먼저 간단히 알려 주세요", "A few quick details first")}</h1>
+      <div class="card stack">
+        <label class="f">${K("이름", "Name")}<input type="text" data-test="whoName" maxlength="20" value="${esc(st.whoName || "")}" autocomplete="name" required></label>
+        <label class="f">${K("전화번호", "Phone number")}<input type="tel" data-test="whoPhone" maxlength="20" inputmode="tel" value="${esc(st.whoPhone || "")}" placeholder="010-1234-5678" autocomplete="tel" required><span class="hint">${K("크루 카카오톡 단체방을 만들 때 써요. 운영진만 볼 수 있어요.", "Used to add you to your crew's KakaoTalk group. Only organizers can see it.")}</span></label>
+        <label class="opt"><input type="checkbox" data-test="whoAgree" ${st.whoAgree ? "checked" : ""}><span class="small">${K("(필수) 이름·전화번호를 캠페인 안내와 크루 카카오톡 단체방 개설에만 쓰고, 파일럿 종료 후 30일 이내에 파기하는 데 동의해요.", "(Required) My name and phone number are used only for campaign notices and my crew's KakaoTalk group, and deleted within 30 days after the pilot.")} <button type="button" class="btn ghost sm" data-go="privacy" style="min-height:28px;padding:0 8px">${K("자세히", "Details")}</button></span></label>
+      </div>
       <fieldset><legend>A1. ${K("학교", "University")}</legend><div class="chips">${schools.map(s => `<button type="button" class="chip" data-act="tset" data-k="base.A1" data-v="${esc(s)}" aria-pressed="${b.A1 === s}">${esc(s === "기타" ? K("기타", "Other") : s)}</button>`).join("")}</div></fieldset>
       <fieldset><legend>A2. ${K("학년", "Year")}</legend><div class="chips">${GRADES.map((g, i) => `<button type="button" class="chip" data-act="tset" data-k="base.A2" data-v="${i}" aria-pressed="${b.A2 === i}">${P2(g)}</button>`).join("")}</div></fieldset>
       <fieldset><legend>A3. ${K("거주 형태", "Where you live")}</legend><div class="chips">${HOMES.map((g, i) => `<button type="button" class="chip" data-act="tset" data-k="base.A3" data-v="${i}" aria-pressed="${b.A3 === i}">${P2(g)}</button>`).join("")}</div></fieldset>
@@ -1150,8 +1155,8 @@ function viewApply() {
     ${late ? `<div class="notice warn">${K(`모집이 마감됐어요(${mmdd(c.applyDeadline)}). 지금 신청하면 예비 명단으로 등록돼요.`, `Sign-up closed on ${mmdd(c.applyDeadline)}. You'll join the waitlist.`)}</div>` : ""}
     ${modeNotice()}
     <label class="f">${K("닉네임 (랭킹·크루에 공개)", "Nickname (shown on rankings and your crew)")}<input type="text" name="nick" maxlength="14" value="${esc(d.nick || "")}" autocomplete="nickname" required><span class="hint">${K("실명·학번은 쓰지 마세요.", "Don't use your real name or student ID.")}</span></label>
-    <label class="f">${K("실명 (비공개 · 리워드 지급용)", "Real name (private · for rewards)")}<input type="text" name="realName" maxlength="20" value="${esc(d.realName || "")}" autocomplete="name" required></label>
-    <label class="f">${K("연락처 (비공개 · 카카오톡 ID 또는 전화번호)", "Contact (private · KakaoTalk ID or phone)")}<input type="text" name="contact" maxlength="40" value="${esc(d.contact || "")}" required><span class="hint">${K("운영진이 카카오톡으로 직접 안내해요.", "Organizers will reach you on KakaoTalk.")}</span></label>
+    <label class="f">${K("실명 (비공개 · 리워드 지급용)", "Real name (private · for rewards)")}<input type="text" name="realName" maxlength="20" value="${esc(d.realName != null ? d.realName : (S.test.whoName || ""))}" autocomplete="name" required></label>
+    <label class="f">${K("전화번호 (비공개 · 카카오톡 단체방 초대용)", "Phone (private · for the KakaoTalk group)")}<input type="tel" name="contact" maxlength="20" inputmode="tel" placeholder="010-1234-5678" value="${esc(d.contact != null ? d.contact : (S.test.whoPhone || ""))}" autocomplete="tel" required><span class="hint">${K("그린 테스트에서 입력한 번호가 미리 채워져요. 운영진이 크루 카카오톡 단체방으로 초대해요.", "Pre-filled from the Green Test. Organizers will add you to your crew's KakaoTalk group.")}</span></label>
     <label class="f">${K("학교", "University")}<select name="school" required><option value="" ${school ? "" : "selected"} disabled>${K("선택해 주세요", "Choose")}</option>${c.schools.map(s => `<option value="${esc(s)}" ${school === s ? "selected" : ""}>${esc(s)}</option>`).join("")}</select></label>
     <fieldset><legend>${K("연락 가능한 시간대 (여러 개 선택)", "When can you chat? (choose any)")}</legend><div class="chips">${[["wd_day", "평일 낮", "Weekday daytime"], ["wd_eve", "평일 저녁", "Weekday evening"], ["we", "주말", "Weekend"]].map(([v, k, e]) => `<button type="button" class="chip" data-act="avail" data-v="${v}" aria-pressed="${av.includes(v)}">${K(k, e)}</button>`).join("")}</div></fieldset>
     <label class="f">${K("크루 소통 언어", "Crew language")}<select name="eng">${[["ko", "한국어", "Korean"], ["en", "영어가 필요해요", "I need English"], ["both", "둘 다 가능 (영어 도움 가능)", "Both (I can help in English)"]].map(([v, k, e]) => `<option value="${v}" ${(d.eng || "ko") === v ? "selected" : ""}>${K(k, e)}</option>`).join("")}</select></label>
@@ -1529,7 +1534,7 @@ function viewSurvey(kind) {
 function viewPrivacy() {
   return `<div class="wrap narrow stack-lg"><h1 class="display" style="font-size:2rem">${K("개인정보 안내", "Privacy")}</h1>
     <div class="card stack small">
-      <p><b>${K("모으는 정보", "What we collect")}</b> — ${K("닉네임·학교·응답(공개 범위: 닉네임과 점수만), 실명·연락처(운영진만 열람), 인증 사진.", "Nickname, university and answers (only nickname and points are public); real name and contact (organizers only); check-in photos.")}</p>
+      <p><b>${K("모으는 정보", "What we collect")}</b> — ${K("그린 테스트 시작 시 이름·전화번호(운영진만 열람, 캠페인 안내·크루 카카오톡 단체방 개설용), 닉네임·학교·응답(공개 범위: 닉네임과 점수만), 인증 사진. 이름·전화번호는 테스트 응답과 따로 보관돼요.", "Name and phone number at the start of the Green Test (organizers only, for notices and your crew's KakaoTalk group); nickname, university and answers (only nickname and points are public); check-in photos. Name and phone are stored separately from test answers.")}</p>
       <p><b>${K("쓰는 곳", "Why")}</b> — ${K("크루 배정, 카카오톡 안내, 리워드 지급, 캠페인 효과 분석(익명).", "Crew placement, KakaoTalk notices, rewards, anonymous campaign analysis.")}</p>
       <p><b>${K("보관 기간", "How long")}</b> — ${K("실명·연락처·인증 사진은 파일럿 종료 후 30일 이내에 파기해요. 분석에는 참가자 코드로만 연결된 익명 데이터만 남겨요.", "Names, contacts and check-in photos are deleted within 30 days after the pilot ends. Only anonymous data linked by participant code is kept for analysis.")}</p>
       <p><b>${K("위치 정보", "Location")}</b> — ${K("웹사이트는 위치(GPS)를 수집하지 않아요.", "This site does not collect GPS location.")}</p>
@@ -1614,8 +1619,8 @@ function adminAssign() {
       <label class="f">${K("또는 붙여넣기 (code, crew_id, crew_name, track 열 필요 · track은 C/S/W/D, 비우면 첫 멤버의 메인 유형)", "Or paste (needs code, crew_id, crew_name, track columns · track C/S/W/D, blank = first member's main type)")}<textarea name="imp" style="min-height:120px;font-family:monospace">${esc(S.draft.imp || "")}</textarea></label>
       <div><button class="btn primary" type="submit">${K("배정 적용 (상태 → 활동)", "Apply (status → active)")}</button></div></form>
     <section class="card stack"><div class="sec-h"><h2>${K("신청자", "Sign-ups")} (${ms.length})</h2></div>
-      <div class="tbl"><table><thead><tr><th>${K("코드", "Code")}</th><th>${K("닉네임", "Nickname")}</th><th>${K("실명", "Name")}</th><th>${K("학교", "Univ.")}</th><th>${K("메인/찰떡", "Main/sub")}</th><th>${K("시간대", "Hours")}</th><th>${K("언어", "Lang")}</th><th>${K("친구", "Friend")}</th><th>UD</th><th>${K("크루", "Crew")}</th><th>${K("상태", "Status")}</th></tr></thead><tbody>
-      ${ms.map(m => `<tr><td class="num">${esc(m.code)}</td><td>${esc(m.nickname)}</td><td>${esc((S.priv[m.code] || {}).realName || "–")}</td><td>${esc(m.school)}</td><td>${m.main}/${m.sub}</td><td>${(m.avail || []).map(a => AV[a] || a).join(",")}</td><td>${esc(m.eng)}</td><td>${esc(m.friend || "")}</td><td>${m.mobility ? K("이동", "Mob") : ""}${m.photoHard ? " " + K("촬영", "Photo") : ""}</td><td>${esc(m.crewId && S.crews[m.crewId] ? S.crews[m.crewId].name : "–")}</td>
+      <div class="tbl"><table><thead><tr><th>${K("코드", "Code")}</th><th>${K("닉네임", "Nickname")}</th><th>${K("실명", "Name")}</th><th>${K("전화번호", "Phone")}</th><th>${K("학교", "Univ.")}</th><th>${K("메인/찰떡", "Main/sub")}</th><th>${K("시간대", "Hours")}</th><th>${K("언어", "Lang")}</th><th>${K("친구", "Friend")}</th><th>UD</th><th>${K("크루", "Crew")}</th><th>${K("상태", "Status")}</th></tr></thead><tbody>
+      ${ms.map(m => `<tr><td class="num">${esc(m.code)}</td><td>${esc(m.nickname)}</td><td>${esc((S.priv[m.code] || {}).realName || "–")}</td><td class="num">${esc((S.priv[m.code] || {}).contact || "–")}</td><td>${esc(m.school)}</td><td>${m.main}/${m.sub}</td><td>${(m.avail || []).map(a => AV[a] || a).join(",")}</td><td>${esc(m.eng)}</td><td>${esc(m.friend || "")}</td><td>${m.mobility ? K("이동", "Mob") : ""}${m.photoHard ? " " + K("촬영", "Photo") : ""}</td><td>${esc(m.crewId && S.crews[m.crewId] ? S.crews[m.crewId].name : "–")}</td>
         <td><select data-act="status" data-code="${esc(m.code)}" aria-label="${K("상태", "Status")}">${Object.entries(STATUS_L).map(([k, l]) => `<option value="${k}" ${m.status === k ? "selected" : ""}>${P2(l)}</option>`).join("")}</select></td></tr>`).join("")}
       </tbody></table></div></section>`;
 }
@@ -1689,7 +1694,7 @@ function adminSettings() {
       <div class="grid2"><label class="f">${K("공지 (한국어)", "Announcement (Korean)")}<textarea name="annKo">${esc(c.annKo)}</textarea></label><label class="f">${K("공지 (영어)", "Announcement (English)")}<textarea name="annEn">${esc(c.annEn)}</textarea></label></div>
       <div><button class="btn primary" type="submit">${K("저장", "Save")}</button></div></form>
     <section class="card stack"><div class="sec-h"><h2>${K("데이터 내보내기 (CSV)", "Export data (CSV)")}</h2></div>
-      <div class="row">${[["members", K("참가자", "Participants")], ["tests", K("테스트·T0", "Tests & T0")], ["proofs", K("인증", "Check-ins")], ["reflections", K("성찰일지", "Reflections")], ["checkins", K("중간 체크인", "Mid check-ins")], ["t1", K("사후 T1", "Post T1")], ["tips", "Tip Exchange"], ["notify", K("발송 기록", "Send log")]].map(([k, l]) => `<button class="btn sm" data-act="export" data-v="${k}">${l}</button>`).join("")}</div>
+      <div class="row">${[["members", K("참가자", "Participants")], ["contacts", K("테스트 참여자 연락처", "Test-taker contacts")], ["tests", K("테스트·T0", "Tests & T0")], ["proofs", K("인증", "Check-ins")], ["reflections", K("성찰일지", "Reflections")], ["checkins", K("중간 체크인", "Mid check-ins")], ["t1", K("사후 T1", "Post T1")], ["tips", "Tip Exchange"], ["notify", K("발송 기록", "Send log")]].map(([k, l]) => `<button class="btn sm" data-act="export" data-v="${k}">${l}</button>`).join("")}</div>
       <p class="hint">${K("T0·T1은 같은 참가자 코드로 연결돼요. 개인정보(실명·연락처)는 '참가자' CSV에만 들어가요.", "T0 and T1 link by participant code. Names and contacts appear only in the participants CSV.")}</p></section>
     <section class="card stack" style="border-color:var(--bad)"><div class="sec-h"><h2>${K("참가 데이터 전체 초기화", "Reset all participant data")}</h2></div>
       <p class="small muted">${K(`신청자·실명/연락처·테스트 응답·크루·인증·사진·팁·설문·발송 기록·정산을 모두 지워요. 캠페인 설정(일정·공지·템플릿)과 운영자 비밀번호는 남아요. 지우기 전에 전체 백업 파일(JSON)이 자동으로 내려받아져요. 현재 신청자 ${Object.keys(S.members).length}명 · 테스트 ${Object.keys(S.tests).length}건 · 인증 ${Object.keys(S.proofs).length}건.`, `Deletes sign-ups, names/contacts, test answers, crews, check-ins, photos, tips, surveys, send logs and payouts. Settings and the organizer password stay. A full JSON backup downloads first.`)}</p>
@@ -1776,6 +1781,12 @@ function hydratePhotos() {
 /* =====================================================================
    12. 동작
    ===================================================================== */
+/* 그린 테스트 기본 정보: 이름·전화번호 (테스트 응답과 따로, 운영진만 보는 private 칸에 저장) */
+const phoneDigits = v => String(v || "").replace(/[^0-9]/g, "");
+const phoneOk = v => /^[0-9+\-\s()]{9,20}$/.test(String(v || "").trim()) && phoneDigits(v).length >= 9 && phoneDigits(v).length <= 15;
+const fmtPhone = v => { const d = phoneDigits(v); return /^01\d{8,9}$/.test(d) ? d.replace(/^(\d{3})(\d{3,4})(\d{4})$/, "$1-$2-$3") : String(v || "").trim(); };
+const whoOk = st => !!(st.whoName || "").trim() && phoneOk(st.whoPhone) && !!st.whoAgree;
+const whoMsg = st => !(st.whoName || "").trim() ? K("이름을 입력해 주세요", "Enter your name") : !phoneOk(st.whoPhone) ? K("전화번호를 확인해 주세요 (예: 010-1234-5678)", "Check your phone number") : K("이름·전화번호 수집에 동의해 주세요", "Please agree to the name/phone notice");
 function setPath(obj, path, val) { const ks = path.split("."); let o = obj; for (let i = 0; i < ks.length - 1; i++) o = o[ks[i]] = o[ks[i]] || {}; o[ks[ks.length - 1]] = val; }
 
 function testRecord(st) {
@@ -1784,12 +1795,18 @@ function testRecord(st) {
     ? { at: Date.now(), lang, ref: refCode(), consent: true, base: st.base, t: st.t, a6: st.a6, m: st.m, p: st.p, main: r.main, sub: r.sub, level: r.level, n: r.n, score: r.score, r1: st.r1 || null }
     : { at: Date.now(), ref: refCode(), consent: false, main: r.main, level: r.level, r1: st.r1 || null };
 }
+async function saveWho(st) {
+  if (!S.db || !st.testId || !whoOk(st) || st.whoSaved === st.testId) return;
+  try { await API.insertPrivate("T-" + st.testId, { kind: "test", testId: st.testId, realName: st.whoName.trim(), contact: fmtPhone(st.whoPhone), at: Date.now() }); st.whoSaved = st.testId; }
+  catch (e) { if (e && (e.code === "dup" || /duplicate|unique|23505/i.test(e.message || ""))) st.whoSaved = st.testId; }
+}
 async function finishTest() {
   const st = S.test;
   S.busy = true; render(true);
   const r = greenResult(st.t, st.a6);
   st.result = r; st.testId = st.testId || rid(10);
   if (S.db) await write(db => db.doc("tests/" + st.testId).set(testRecord(st)));
+  await saveWho(st);
   st.i = STEPS.length - 1; S.busy = false; saveTest(); render(true); window.scrollTo(0, 0);
 }
 async function shareResult() {
@@ -1840,6 +1857,7 @@ document.addEventListener("click", async e => {
   else if (act === "consent") { st.consent = a.checked; saveTest(); }
   else if (act === "t-start") { st.i = 1; saveTest(); render(true); }
   else if (act === "t-back") { st.i = Math.max(0, st.i - 1); saveTest(); render(true); }
+  else if (act === "t-next" && STEPS[st.i] === "base" && !whoOk(st)) { toast(whoMsg(st)); }
   else if (act === "t-next") { st.i = Math.min(STEPS.length - 2, st.i + 1); saveTest(); render(true); window.scrollTo(0, 0); }
   else if (act === "t-ans") { const qi = +STEPS[st.i].slice(1); st.t[qi] = +v; st.i++; saveTest(); render(true); window.scrollTo(0, 0); }
   else if (act === "tset") {
@@ -1903,7 +1921,7 @@ document.addEventListener("click", async e => {
 
 document.addEventListener("input", e => {
   const el = e.target;
-  if (el.dataset && el.dataset.test) { setPath(S.test, el.dataset.test, el.value); saveTest(); return; }
+  if (el.dataset && el.dataset.test) { setPath(S.test, el.dataset.test, el.type === "checkbox" ? el.checked : el.value); saveTest(); return; }
   if (!el.name || el.type === "radio" || el.type === "file") return;
   S.draft[el.name] = el.type === "checkbox" ? el.checked : el.value;
 });
@@ -1953,7 +1971,8 @@ async function doApply(f) {
   if (!r) return toast(K("먼저 그린 테스트를 마쳐 주세요", "Finish the Green Test first"));
   if (!nick) return toast(K("닉네임을 입력해 주세요", "Enter a nickname"));
   if (Object.values(S.members).some(m => String(m.nickname).toLowerCase() === nick.toLowerCase())) return toast(K("이미 쓰고 있는 닉네임이에요", "That nickname is taken"));
-  if (!realName || !contact) return toast(K("실명과 연락처를 입력해 주세요 (운영진만 봐요)", "Enter your name and contact (organizers only)"));
+  if (!realName || !contact) return toast(K("실명과 전화번호를 입력해 주세요 (운영진만 봐요)", "Enter your name and phone (organizers only)"));
+  if (!phoneOk(contact)) return toast(K("전화번호를 확인해 주세요 (예: 010-1234-5678)", "Check your phone number"));
   if (!school) return toast(K("학교를 선택해 주세요", "Choose your university"));
   if (!(d.avail || []).length) return toast(K("연락 가능한 시간대를 하나 이상 골라 주세요", "Pick at least one time slot"));
   const code = normCode(el("ucode").value);
@@ -1969,7 +1988,7 @@ async function doApply(f) {
     main: r.main, sub: r.sub, level: r.level, track: r.main, testId: S.test.testId, ref: refCode(), status, crewId: null, hideRank: false, createdAt: Date.now() };
   const pinHash = await sha256(code + ":" + pin);
   /* 개인정보 먼저 저장 — 같은 코드가 이미 있으면 DB가 거절함(중복 방지). 지난 시도에서 개인정보만 저장되고 끊긴 경우(같은 코드+PIN)는 이어서 진행 */
-  try { await API.insertPrivate(code, { realName, contact, pinHash, at: Date.now() }); }
+  try { await API.insertPrivate(code, { realName, contact: fmtPhone(contact), pinHash, testId: S.test.testId || null, at: Date.now() }); }
   catch (err) {
     const dup = /duplicate|unique|exists|23505/i.test((err && err.message) || "") || (err && err.code === "dup");
     let mine = false;
@@ -2231,6 +2250,14 @@ function exportCSV(kind) {
   } else if (kind === "tips") {
     rows = [["crew", "code", "title", "text", "likes", "at"]];
     Object.values(S.tips).forEach(x => rows.push([S.crews[x.crewId] ? S.crews[x.crewId].name : x.crewId, x.code, x.title, x.text, (x.likes || []).length, new Date(x.createdAt).toISOString()]));
+  } else if (kind === "contacts") {
+    /* 그린 테스트를 마친 사람 전체의 이름·전화번호 (신청 여부·크루 함께) — 카카오톡 단체방 개설용 */
+    const byTest = {}; ms.forEach(m => { if (m.testId) byTest[m.testId] = m; });
+    rows = [["test_at", "name", "phone", "main_type", "applied", "code", "nickname", "crew", "status"]];
+    Object.entries(P).filter(([k, v]) => k.startsWith("T-")).sort((a, b) => (a[1].at || 0) - (b[1].at || 0)).forEach(([k, v]) => {
+      const t = S.tests[v.testId] || {}, m = byTest[v.testId];
+      rows.push([new Date(v.at).toISOString(), v.realName || "", v.contact || "", t.main ? TRACKS[t.main].code : "", m ? 1 : 0, m ? m.code : "", m ? m.nickname : "", m && S.crews[m.crewId] ? S.crews[m.crewId].name : "", m ? m.status : ""]);
+    });
   } else if (kind === "notify") {
     rows = [["at", "type", "filter", "targets", "checkins_within_3h"]];
     Object.values(S.notify).forEach(l => rows.push([new Date(l.at).toISOString(), l.type, l.filter, (l.targets || []).join("|"), Object.values(S.proofs).filter(p => (l.targets || []).includes(p.code) && p.createdAt >= l.at && p.createdAt <= l.at + 3 * 3600e3).length]));
