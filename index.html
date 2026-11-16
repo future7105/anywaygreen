@@ -1616,7 +1616,7 @@ function adminAssign() {
   const AV = { wd_day: K("평일낮", "WD day"), wd_eve: K("평일저녁", "WD eve"), we: K("주말", "Wknd") };
   const notes = S.assignNotes || [];
   return `<section class="card stack"><div class="sec-h"><h2>${K("1. 배정 초안 만들기", "1. Draft crew assignments")}</h2><div class="row"><button class="btn sm primary" data-act="auto-assign">${K("자동 배정 초안 만들기", "Auto-draft crews")}</button><button class="btn sm" data-act="export" data-v="assign">${K("CSV 받기 (시트에서 직접 배정)", "Download CSV (assign in a sheet)")}</button></div></div>
-      <p class="small muted">${K("자동 초안 규칙: ① 영어 사용자(영어 필요 + 둘 다 가능)끼리 먼저 크루로 묶고 ② 한국어 사용자끼리 묶어요. 각 크루의 Track은 크루원 메인 유형 중 가장 많은 Track(동점이면 찰떡 유형까지 반영)으로 정해요. 크루 수는 인원 ÷ 5 올림이고, 인원은 최대한 고르게 나눠요(예: 6명 → 3·3, 8명 → 4·4). Track이 같은 사람끼리 모이도록 정렬한 뒤 나누고, 친구 코드가 같은 사람은 한 크루에 최대 2명이에요. 이미 크루가 있는 사람은 그대로 둬요. 초안을 확인·수정한 뒤 [배정 적용]을 누르세요. 시트로 직접 배정할 때는 crew_id 칸(예: S1)을 꼭 채워야 해요.", "Auto-draft rules: ① English speakers (needs English + bilingual) are grouped first, ② then Korean speakers. Each crew's track is the most common main type among its members (sub-type breaks ties). Crews = ceil(people ÷ 5), sized as evenly as possible (6 → 3·3, 8 → 4·4). Max 2 friends per crew; existing crews are kept. Review, then press Apply. When assigning in a sheet, fill in crew_id (e.g. S1).")}</p>
+      <p class="small muted">${K("자동 초안 규칙: ① 영어 사용자(영어 필요 + 둘 다 가능)끼리 먼저 크루로 묶고 ② 한국어 사용자끼리 묶어요. 각 크루의 Track은 크루원 메인 유형 중 가장 많은 Track(동점이면 찰떡 유형까지 반영)으로 정해요. 크루는 3명 기준이에요 — 크루 수는 인원 ÷ 3 내림이고, 인원은 최대한 고르게 나눠서 2명짜리 크루는 생기지 않아요(예: 6명 → 3·3, 7명 → 4·3, 9명 → 3·3·3). Track이 같은 사람끼리 모이도록 정렬한 뒤 나누고, 친구 코드가 같은 사람은 한 크루에 최대 2명이에요. 이미 크루가 있는 사람은 그대로 둬요. 초안을 확인·수정한 뒤 [배정 적용]을 누르세요. 시트로 직접 배정할 때는 crew_id 칸(예: S1)을 꼭 채워야 해요.", "Auto-draft rules: ① English speakers (needs English + bilingual) are grouped first, ② then Korean speakers. Each crew's track is the most common main type among its members (sub-type breaks ties). Crews of 3: count = floor(people ÷ 3), sized evenly so no crew has 2 (6 → 3·3, 7 → 4·3, 9 → 3·3·3). Max 2 friends per crew; existing crews are kept. Review, then press Apply. When assigning in a sheet, fill in crew_id (e.g. S1).")}</p>
       ${notes.length ? `<div class="notice warn small"><b>${K("확인할 점", "Check")}</b><br>${notes.map(esc).join("<br>")}</div>` : ""}</section>
     <form class="card stack" id="importForm" novalidate><div class="sec-h"><h2>${K("2. 배정 결과 적용하기", "2. Apply assignments")}</h2></div>
       <label class="f">${K("CSV 파일", "CSV file")}<input type="file" id="imp_file" accept=".csv,text/csv"></label>
@@ -2158,7 +2158,7 @@ async function doAdminLogin(f) {
 /* 크루 자동 배정 초안 (11/16 변경)
    1순위: 영어 사용자(영어 필요 + 둘 다 가능)끼리 크루 → 그 크루에서 가장 많은 Track 배정
    2순위: 한국어 사용자끼리 크루 → 그 크루에서 가장 많은 Track 배정
-   크루 수 = 인원 ÷ 5 올림, 인원은 최대한 고르게 (6→3·3, 7→4·3, 8→4·4, 11→4·4·3) */
+   크루 수 = 인원 ÷ 3 내림, 인원은 최대한 고르게 (5→5, 6→3·3, 7→4·3, 8→4·4, 9→3·3·3) */
 const langGroup = m => (m.eng === "en" || m.eng === "both") ? "en" : "ko";
 function crewTrackOf(ms) {
   const sc = {}; TORDER.forEach(t => { sc[t] = 0; });
@@ -2166,7 +2166,8 @@ function crewTrackOf(ms) {
   const mains = t => ms.filter(m => m.main === t).length;
   return TORDER.slice().sort((a, b) => sc[b] - sc[a] || mains(b) - mains(a))[0];
 }
-const evenSizes = n => { const k = Math.max(1, Math.ceil(n / 5)); return Array.from({ length: k }, (_, i) => Math.floor(n / k) + (i < n % k ? 1 : 0)); };
+const CREW_MIN = 3; // 크루 기본 인원 3명 (11/16 변경) — 크루 수 = 인원 ÷ 3 내림 → 모든 크루 3명 이상, 2명 크루 없음
+const evenSizes = n => { const k = Math.max(1, Math.floor(n / CREW_MIN)); return Array.from({ length: k }, (_, i) => Math.floor(n / k) + (i < n % k ? 1 : 0)); };
 function autoAssign() {
   const notes = [];
   const csvOf = rows => rows.map(r => r.map(x => /[",\n]/.test(String(x)) ? `"${String(x).replace(/"/g, '""')}"` : x).join(",")).join("\n");
@@ -2183,7 +2184,9 @@ function autoAssign() {
     const size = id => placed.filter(x => x.crewId === id).length + rows.filter(r => r[1] === id).length;
     const crewLang = id => { const ms = placed.filter(x => x.crewId === id); return ms.filter(x => langGroup(x) === "en").length * 2 >= ms.length && ms.length ? "en" : "ko"; };
     const rest = [];
+    const newByLang = lg => pool.filter(x => langGroup(x) === lg).length;
     for (const m of pool) {
+      if (newByLang(langGroup(m)) >= CREW_MIN) { rest.push(m); continue; } // 같은 언어 새 신청자가 3명 이상이면 기존 크루에 끼우지 않고 새 크루로
       const fit = tr => Object.entries(S.crews).filter(([id, c]) => placed.some(x => x.crewId === id) && crewLang(id) === langGroup(m) && (!tr || c.track === tr) && size(id) < 5 && (!m.friend || placed.concat(pool).filter(x => x.friend === m.friend && (x.crewId === id || rows.some(r => r[0] === x.code && r[1] === id))).length < 2)).sort((a, b) => size(a[0]) - size(b[0]))[0];
       const hit = fit(m.main) || (m.sub && fit(m.sub));
       if (hit) { row(m, hit[0], hit[1]); if (hit[1].track !== m.main) notes.push(K(`${m.nickname}: 찰떡 Track(${hit[1].track}) 크루 ${hit[1].name}에 넣었어요`, `${m.nickname}: placed in sub-track crew ${hit[1].name}`)); }
