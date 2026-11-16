@@ -114,6 +114,7 @@ main{padding:22px 0 120px;min-height:70vh}
 .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
 .pill{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:999px;font-size:.76rem;font-weight:700;border:1px solid var(--line);white-space:nowrap}
 .pill.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 50%,transparent)}
+.pill.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,transparent)}
 .pill.wait{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,transparent)}
 .pill.bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 50%,transparent)}
 .pill.acc{background:var(--accent-soft);color:var(--accent);border-color:transparent}
@@ -1073,7 +1074,7 @@ function viewTest() {
       <div class="card stack">
         <label class="f">${K("이름", "Name")}<input type="text" data-test="whoName" maxlength="20" value="${esc(st.whoName || "")}" autocomplete="name" required></label>
         <label class="f">${K("전화번호", "Phone number")}<input type="tel" data-test="whoPhone" maxlength="20" inputmode="tel" value="${esc(st.whoPhone || "")}" placeholder="010-1234-5678" autocomplete="tel" required><span class="hint">${K("크루 카카오톡 단체방을 만들 때 써요. 운영진만 볼 수 있어요.", "Used to add you to your crew's KakaoTalk group. Only organizers can see it.")}</span></label>
-        <label class="opt"><input type="checkbox" data-test="whoAgree" ${st.whoAgree ? "checked" : ""}><span class="small">${K("(필수) 이름·전화번호를 캠페인 안내와 크루 카카오톡 단체방 개설에만 쓰고, 파일럿 종료 후 30일 이내에 파기하는 데 동의해요.", "(Required) My name and phone number are used only for campaign notices and my crew's KakaoTalk group, and deleted within 30 days after the pilot.")} <button type="button" class="btn ghost sm" data-go="privacy" style="min-height:28px;padding:0 8px">${K("자세히", "Details")}</button></span></label>
+        <label class="opt"><input type="checkbox" data-test="whoAgree" ${st.whoAgree ? "checked" : ""}><span class="small">${K("(필수) 이름·전화번호를 캠페인 안내와 크루 카카오톡 단체방 개설에만 쓰고, 파일럿 종료 후 30일 이내에 파기하는 데 동의해요. 테스트를 마치면 파일럿 신청자로 자동 등록돼요.", "(Required) My name and phone number are used only for campaign notices and my crew's KakaoTalk group, and deleted within 30 days after the pilot. Finishing the test signs you up for the pilot.")} <button type="button" class="btn ghost sm" data-go="privacy" style="min-height:28px;padding:0 8px">${K("자세히", "Details")}</button></span></label>
       </div>
       <fieldset><legend>A1. ${K("학교", "University")}</legend><div class="chips">${schools.map(s => `<button type="button" class="chip" data-act="tset" data-k="base.A1" data-v="${esc(s)}" aria-pressed="${b.A1 === s}">${esc(s === "기타" ? K("기타", "Other") : s)}</button>`).join("")}</div></fieldset>
       <fieldset><legend>A2. ${K("학년", "Year")}</legend><div class="chips">${GRADES.map((g, i) => `<button type="button" class="chip" data-act="tset" data-k="base.A2" data-v="${i}" aria-pressed="${b.A2 === i}">${P2(g)}</button>`).join("")}</div></fieldset>
@@ -1132,8 +1133,9 @@ function viewResult() {
       <p class="hint">${K("1 전혀 안 맞아요 · 5 완전 나예요", "1 not at all · 5 totally me")}</p>
     </div>
     ${trackMissionsHTML(r.main)}
+    ${!m && st.testId && S.members[autoCode(st.testId)] ? `<div class="notice ok small" style="text-align:center"><b>${K("파일럿 신청자로 등록됐어요 ✅", "You're signed up for the pilot ✅")}</b><br>${K("입력한 전화번호로 운영진이 크루 카카오톡 단체방에 초대해요. 미션 인증·랭킹에 쓸 닉네임과 로그인 코드·PIN은 아래 [파일럿 신청]에서 만들어 주세요.", "Organizers will add you to your crew's KakaoTalk group. To check in and appear in rankings, set your nickname, login code and PIN via [Join the pilot] below.")}</div>` : ""}
     <div class="row" style="justify-content:center">
-      ${m ? "" : `<button class="btn primary lg" data-go="apply">${K("이 결과로 파일럿 신청하기", "Join the pilot with this result")}</button>`}
+      ${m ? "" : `<button class="btn primary lg" data-go="apply">${st.testId && S.members[autoCode(st.testId)] ? K("파일럿 신청 완료하기 (닉네임·로그인 코드)", "Finish sign-up (nickname & login code)") : K("이 결과로 파일럿 신청하기", "Join the pilot with this result")}</button>`}
       <button class="btn" data-act="share-result">${icon("link")}${K("결과 링크 공유", "Share link")}</button>
       <button class="btn" data-act="story-result">${K("인스타 스토리 이미지", "Instagram story image")}</button>
     </div>
@@ -1278,7 +1280,7 @@ function viewMission() {
   if (bonusOn) groups.push([K("W3 보너스 · STUDY 미션", "Week 3 bonus · STUDY missions"), MISSIONS.filter(x => x.tr === "S"), true]);
   const sel = d.mission && MISSION[d.mission], selBonus = !!(sel && d.bonus);
   const bLimit = m.photoHard ? c.buddyPerWeekUD : c.buddyPerWeek, bUsed = myBuddyUsed(m, w);
-  const crewmates = crewMembers(m.crewId).filter(x => x.code !== m.code);
+  const crewmates = crewMembers(m.crewId).filter(x => x.code !== m.code).filter(x => !x.auto);
   const methods = methodsFor(m, sel, bUsed, bLimit);
   if (sel && !methods.some(x => x[0] === d.method && !x[3])) d.method = (methods.find(x => !x[3]) || [null])[0];
   const mine = Object.entries(S.proofs).filter(([, p]) => p.code === m.code).sort((a, b) => b[1].createdAt - a[1].createdAt);
@@ -1609,6 +1611,8 @@ function adminStats() {
 const STATUS_L = { applied: ["신청", "Signed up"], active: ["활동", "Active"], contact: ["연락 중", "Contacting"], replaced: ["교체됨", "Replaced"], reserve: ["예비", "Waitlist"] };
 function adminAssign() {
   const ms = Object.values(S.members).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  const dupPhone = {}; ms.forEach(m => { const c = (S.priv[m.code] || {}).contact; if (c) dupPhone[c] = (dupPhone[c] || 0) + 1; });
+  const autoN = ms.filter(m => m.auto).length;
   const AV = { wd_day: K("평일낮", "WD day"), wd_eve: K("평일저녁", "WD eve"), we: K("주말", "Wknd") };
   const notes = S.assignNotes || [];
   return `<section class="card stack"><div class="sec-h"><h2>${K("1. 배정 초안 만들기", "1. Draft crew assignments")}</h2><div class="row"><button class="btn sm primary" data-act="auto-assign">${K("자동 배정 초안 만들기", "Auto-draft crews")}</button><button class="btn sm" data-act="export" data-v="assign">${K("CSV 받기 (시트에서 직접 배정)", "Download CSV (assign in a sheet)")}</button></div></div>
@@ -1618,11 +1622,34 @@ function adminAssign() {
       <label class="f">${K("CSV 파일", "CSV file")}<input type="file" id="imp_file" accept=".csv,text/csv"></label>
       <label class="f">${K("또는 붙여넣기 (code, crew_id, crew_name, track 열 필요 · track은 C/S/W/D, 비우면 첫 멤버의 메인 유형)", "Or paste (needs code, crew_id, crew_name, track columns · track C/S/W/D, blank = first member's main type)")}<textarea name="imp" style="min-height:120px;font-family:monospace">${esc(S.draft.imp || "")}</textarea></label>
       <div><button class="btn primary" type="submit">${K("배정 적용 (상태 → 활동)", "Apply (status → active)")}</button></div></form>
+    ${testTakersHTML()}
     <section class="card stack"><div class="sec-h"><h2>${K("신청자", "Sign-ups")} (${ms.length})</h2></div>
+      ${autoN ? `<p class="small muted">${K(`'자동'은 테스트만 마치고 자동 등록된 사람 ${autoN}명이에요. 크루 배정·카톡 초대는 똑같이 할 수 있고, 미션 인증은 본인이 [파일럿 신청]에서 닉네임·로그인 코드·PIN을 만든 뒤부터 가능해요(배정된 크루는 그대로 이어져요).`, `'Auto' = ${autoN} people signed up by finishing the test. You can assign and invite them; they can check in after setting a login via Join the pilot (crew carries over).`)}</p>` : ""}
       <div class="tbl"><table><thead><tr><th>${K("코드", "Code")}</th><th>${K("닉네임", "Nickname")}</th><th>${K("실명", "Name")}</th><th>${K("전화번호", "Phone")}</th><th>${K("학교", "Univ.")}</th><th>${K("메인/찰떡", "Main/sub")}</th><th>${K("시간대", "Hours")}</th><th>${K("언어", "Lang")}</th><th>${K("친구", "Friend")}</th><th>UD</th><th>${K("크루", "Crew")}</th><th>${K("상태", "Status")}</th></tr></thead><tbody>
-      ${ms.map(m => `<tr><td class="num">${esc(m.code)}</td><td>${esc(m.nickname)}</td><td>${esc((S.priv[m.code] || {}).realName || "–")}</td><td class="num">${esc((S.priv[m.code] || {}).contact || "–")}</td><td>${esc(m.school)}</td><td>${m.main}/${m.sub}</td><td>${(m.avail || []).map(a => AV[a] || a).join(",")}</td><td>${esc(m.eng)}</td><td>${esc(m.friend || "")}</td><td>${m.mobility ? K("이동", "Mob") : ""}${m.photoHard ? " " + K("촬영", "Photo") : ""}</td><td>${esc(m.crewId && S.crews[m.crewId] ? S.crews[m.crewId].name : "–")}</td>
+      ${ms.map(m => `<tr><td class="num">${m.auto ? `<span class="pill" title="${K("테스트만 완료 — 로그인 코드 미설정", "Test only — no login yet")}">${K("자동", "Auto")}</span>` : esc(m.code)}</td><td>${esc(m.nickname)}${dupPhone[(S.priv[m.code] || {}).contact] > 1 ? ` <span class="pill warn">${K("번호 중복", "Dup phone")}</span>` : ""}</td><td>${esc((S.priv[m.code] || {}).realName || "–")}</td><td class="num">${esc((S.priv[m.code] || {}).contact || "–")}</td><td>${esc(m.school)}</td><td>${m.main}/${m.sub}</td><td>${(m.avail || []).map(a => AV[a] || a).join(",")}</td><td>${esc(m.eng)}</td><td>${esc(m.friend || "")}</td><td>${m.mobility ? K("이동", "Mob") : ""}${m.photoHard ? " " + K("촬영", "Photo") : ""}</td><td>${esc(m.crewId && S.crews[m.crewId] ? S.crews[m.crewId].name : "–")}</td>
         <td><select data-act="status" data-code="${esc(m.code)}" aria-label="${K("상태", "Status")}">${Object.entries(STATUS_L).map(([k, l]) => `<option value="${k}" ${m.status === k ? "selected" : ""}>${P2(l)}</option>`).join("")}</select></td></tr>`).join("")}
       </tbody></table></div></section>`;
+}
+/* 운영자: 그린 테스트 참여자 전체 (이름·전화번호는 운영진 전용 칸에서) + 신청 여부 */
+function testTakersHTML() {
+  const ts = Object.entries(S.tests).sort((a, b) => (b[1].at || 0) - (a[1].at || 0));
+  const st = id => { const f = fullMemberOf(id); if (f) return [K("신청 완료", "Signed up") + " · " + f.code, "ok"]; if (S.members[autoCode(id)]) return [K("자동 등록", "Auto"), ""]; return [K("미등록", "Not registered"), "warn"]; };
+  const missing = ts.filter(([id]) => !fullMemberOf(id) && !S.members[autoCode(id)]).length;
+  return `<section class="card stack"><div class="sec-h"><h2>${K("그린 테스트 참여자", "Green Test takers")} (${ts.length})</h2>${missing ? `<button class="btn sm primary" data-act="register-takers">${K(`미등록 ${missing}명 신청자로 등록`, `Register ${missing} as sign-ups`)}</button>` : ""}</div>
+    <p class="small muted">${K("테스트를 마친 사람 전체예요. 이름·전화번호는 11/16 오전 업데이트 이후 테스트한 사람만 있어요. '테스트 참여자 연락처' CSV로도 받을 수 있어요.", "Everyone who finished the test. Names/phones exist only for tests taken after the 11/16 morning update.")}</p>
+    <div class="tbl"><table><thead><tr><th>${K("시각", "Time")}</th><th>${K("이름", "Name")}</th><th>${K("전화번호", "Phone")}</th><th>${K("학교", "Univ.")}</th><th>${K("메인/찰떡", "Main/sub")}</th><th>R1</th><th>${K("신청", "Sign-up")}</th></tr></thead><tbody>
+    ${ts.map(([id, t]) => { const p = S.priv[autoCode(id)] || {}, [sl, cls] = st(id); const d = new Date(t.at || 0);
+      return `<tr><td class="num">${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}</td><td>${esc(p.realName || "–")}</td><td class="num">${esc(p.contact || "–")}</td><td>${esc((t.base && t.base.A1) || "–")}</td><td>${t.main || ""}/${t.sub || ""}</td><td class="num">${t.r1 || ""}</td><td><span class="pill ${cls}">${esc(sl)}</span></td></tr>`; }).join("") || `<tr><td colspan="7" class="muted">${K("아직 없어요.", "None yet.")}</td></tr>`}
+    </tbody></table></div></section>`;
+}
+async function registerTakers() {
+  const ids = Object.keys(S.tests).filter(id => !fullMemberOf(id) && !S.members[autoCode(id)]);
+  let n = 0;
+  for (const id of ids) {
+    const t = S.tests[id]; if (!t.main) continue;
+    if (await write(db => db.doc("members/" + autoCode(id)).set(autoMemberRec({ testId: id, main: t.main, sub: t.sub, level: t.level, school: t.base && t.base.A1, ref: t.ref, lang: t.lang, at: t.at })))) n++;
+  }
+  toast(K(`${n}명을 신청자로 등록했어요`, `Registered ${n}`)); render(true);
 }
 function notifyTargets() {
   const t = today(), w = curWeek(), f = S.notifyFilter;
@@ -1800,6 +1827,21 @@ async function saveWho(st) {
   try { await API.insertPrivate("T-" + st.testId, { kind: "test", testId: st.testId, realName: st.whoName.trim(), contact: fmtPhone(st.whoPhone), at: Date.now() }); st.whoSaved = st.testId; }
   catch (e) { if (e && (e.code === "dup" || /duplicate|unique|23505/i.test(e.message || ""))) st.whoSaved = st.testId; }
 }
+/* 테스트 완료 = 자동 신청 등록. 코드는 'T-테스트ID'(로그인 불가), 닉네임·로그인 코드·PIN은 [파일럿 신청]에서 완성 */
+const autoCode = testId => "T-" + testId;
+function autoMemberRec(o) {
+  const code = autoCode(o.testId), sch = o.school || "";
+  return { code, nickname: K("그린", "Green") + o.testId.slice(0, 4).toUpperCase(), school: sch, lang: o.lang || lang, avail: [], eng: o.lang === "en" ? "en" : "ko", friend: "",
+    mobility: false, photoHard: false, interview: false, main: o.main, sub: o.sub || null, level: o.level || "sprout", track: o.main, testId: o.testId, ref: o.ref || "",
+    status: today() > cfg().applyDeadline ? "reserve" : "applied", crewId: null, hideRank: true, auto: true, createdAt: o.at || Date.now() };
+}
+const fullMemberOf = testId => Object.values(S.members).find(m => m.testId === testId && !m.auto) || null;
+async function autoRegister(st) {
+  if (!S.db || !st.testId || !st.result || !whoOk(st) || me()) return;
+  if (fullMemberOf(st.testId) || S.members[autoCode(st.testId)]) return;
+  const r = st.result;
+  await write(db => db.doc("members/" + autoCode(st.testId)).set(autoMemberRec({ testId: st.testId, main: r.main, sub: r.sub, level: r.level, school: st.base && st.base.A1, ref: refCode(), lang })));
+}
 async function finishTest() {
   const st = S.test;
   S.busy = true; render(true);
@@ -1807,6 +1849,7 @@ async function finishTest() {
   st.result = r; st.testId = st.testId || rid(10);
   if (S.db) await write(db => db.doc("tests/" + st.testId).set(testRecord(st)));
   await saveWho(st);
+  await autoRegister(st);
   st.i = STEPS.length - 1; S.busy = false; saveTest(); render(true); window.scrollTo(0, 0);
 }
 async function shareResult() {
@@ -1897,6 +1940,7 @@ document.addEventListener("click", async e => {
   else if (act === "logout") { store.del("ag.session"); S.me = null; S.draft = {}; toast(K("로그아웃했어요", "Logged out")); go("home"); }
   /* 운영 */
   else if (act === "admin-tab") { S.adminTab = v; render(true); if (S.admin) API.privateAll(S.adminPw || "").then(p => { S.priv = p; render(); }).catch(() => {}); } // 새 신청자의 실명·연락처도 보이도록 다시 불러옴
+  else if (act === "register-takers") { if (S.admin && !S.busy) { S.busy = true; await registerTakers(); S.busy = false; } }
   else if (act === "reset-all") { if (S.admin && !S.busy) await resetAll(); }
   else if (act === "admin-out") { S.admin = false; S.adminPw = null; S.priv = {}; go("home"); }
   else if (act === "auto-assign") { const r = autoAssign(); S.draft.imp = r.csv; S.assignNotes = r.notes; render(true); toast(K("초안을 만들었어요. 확인 후 [배정 적용]을 눌러 주세요", "Draft ready. Review, then Apply")); }
@@ -1986,6 +2030,8 @@ async function doApply(f) {
   const member = { code, nickname: nick.slice(0, 14), school, lang, avail: d.avail, eng: el("eng").value, friend: (el("friend").value || "").trim().toUpperCase().slice(0, 12),
     mobility: !!el("mobility").checked, photoHard: !!el("photoHard").checked, interview: !!el("interview").checked,
     main: r.main, sub: r.sub, level: r.level, track: r.main, testId: S.test.testId, ref: refCode(), status, crewId: null, hideRank: false, createdAt: Date.now() };
+  const auto = S.test.testId ? S.members[autoCode(S.test.testId)] : null; // 테스트 때 자동 등록된 기록 → 크루·상태 이어받기
+  if (auto && auto.crewId) Object.assign(member, { crewId: auto.crewId, status: auto.status, track: auto.track });
   const pinHash = await sha256(code + ":" + pin);
   /* 개인정보 먼저 저장 — 같은 코드가 이미 있으면 DB가 거절함(중복 방지). 지난 시도에서 개인정보만 저장되고 끊긴 경우(같은 코드+PIN)는 이어서 진행 */
   try { await API.insertPrivate(code, { realName, contact: fmtPhone(contact), pinHash, testId: S.test.testId || null, at: Date.now() }); }
@@ -1999,6 +2045,7 @@ async function doApply(f) {
     }
   }
   let ok = await write(db => db.doc("members/" + code).set(member));
+  if (ok && auto) await write(db => db.doc("members/" + auto.code).delete());
   /* 테스트 기록이 DB에 없으면(초기화 이전에 한 테스트 등) 이 브라우저에 남은 응답으로 다시 저장 */
   if (ok && S.test.testId && !S.tests[S.test.testId]) await write(db => db.doc("tests/" + S.test.testId).set({ ...testRecord(S.test), code: S.test.consent ? code : undefined }));
   else if (ok && S.test.testId && S.tests[S.test.testId] && S.tests[S.test.testId].consent) await write(db => db.doc("tests/" + S.test.testId).update({ code }));
@@ -2033,7 +2080,7 @@ async function doProof() {
   if (method === "buddy") {
     const lim = m.photoHard ? c.buddyPerWeekUD : c.buddyPerWeek;
     if (myBuddyUsed(m, w) >= lim) return toast(K("이번 주 버디 인증 횟수를 다 썼어요", "No buddy checks left this week"));
-    buddy = d.buddy || (crewMembers(m.crewId).find(x => x.code !== m.code) || {}).code;
+    buddy = d.buddy || (crewMembers(m.crewId).find(x => x.code !== m.code && !x.auto) || {}).code;
     if (!buddy) return toast(K("확인해 줄 크루원이 없어요", "No crewmate to confirm"));
     /* [제안] 같은 짝끼리 반복 인증 제한: 같은 크루원에게는 한 주 1회까지 */
     const same = Object.values(S.proofs).filter(p => p.code === m.code && p.method === "buddy" && p.buddy === buddy && p.week === w && !["rejected", "cancelled"].includes(p.status)).length;
@@ -2187,7 +2234,8 @@ async function doImport() {
   if (ci("code") < 0 || ci("crew_id") < 0) return toast(K("code, crew_id 열이 필요해요", "Need code and crew_id columns"));
   const crews = {}; let emptyCid = 0; const unknown = [];
   for (const r of rows.slice(1)) {
-    const code = normCode(r[ci("code")]), cid = (r[ci("crew_id")] || "").trim();
+    const raw = String(r[ci("code")] || "").trim(), byNorm = normCode(raw);
+    const code = S.members[raw] ? raw : S.members[byNorm] ? byNorm : (Object.keys(S.members).find(k => normCode(k) === byNorm) || byNorm), cid = (r[ci("crew_id")] || "").trim(); // 자동 등록(T-...) 코드도 인식
     if (!code) continue;
     if (!S.members[code]) { unknown.push(code); continue; }
     if (!cid) { emptyCid++; continue; }
